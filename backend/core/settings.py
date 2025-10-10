@@ -27,6 +27,11 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 if not SECRET_KEY:
     SECRET_KEY = get_random_secret_key()
+    # SECURITY WARNING: Automatically write the generated secret key to a .env file if it doesn't exist
+    env_path = BASE_DIR / ".env"
+    if not env_path.exists():
+        with open(env_path, "a") as env_file:
+            env_file.write(f"DJANGO_SECRET_KEY={SECRET_KEY}\n")
     
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,6 +42,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "apps.listings",
+    "rest_framework",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
