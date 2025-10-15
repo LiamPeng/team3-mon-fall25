@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const EditListing = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -37,10 +38,30 @@ const EditListing = () => {
     setIsConfirming(true);
   };
 
-  const handleConfirmSubmit = () => {
-    console.log("Submitting changes:", { title, description, price, category, file });
-    setIsConfirming(false);
-    // TODO: Add navigation or success message after submission
+  const handleConfirmSubmit = async () => {
+    const updatedData = { title, description, price, category, file };
+    console.log("Submitting changes:", updatedData);
+
+    // TODO: Replace with actual API call
+    try {
+      console.log(`Sending updated data for listing ${id} to the API...`);
+      // const response = await fetch(`/api/listings/${id}`, {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(updatedData),
+      // });
+      // if (!response.ok) throw new Error('Network response was not ok');
+      // const result = await response.json();
+      // console.log('API response:', result);
+
+      setIsConfirming(false);
+      navigate("/my-listings"); // Redirect after successful submission
+      // TODO: update with project-level alert in future
+      alert("Updated successfully")
+    } catch (error) {
+      console.error("Failed to update listing:", error);
+      // TODO: Handle API errors (e.g., show a notification to the user)
+    }
   };
 
   const getChanges = () => {
