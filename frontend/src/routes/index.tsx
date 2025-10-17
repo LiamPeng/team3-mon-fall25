@@ -6,6 +6,7 @@ import CreateListing from "../pages/CreateListing";  //Import page
 import App from "../App";
 import MyListings from "../pages/MyListings";
 import ListingDetail from "../pages/ListingDetail";
+import EditListing from "../pages/EditListing";
 
 
 
@@ -18,6 +19,7 @@ export default function AppRouter() {
           <Route path="/my-listings" element={<MyListings />} />
           <Route index element={<Home />} />
           <Route path="/listing/:id" element={<ListingDetail />} />
+          <Route path="/listing/:id/edit" element={<EditListing />} />
           <Route path="create-listing" element={<CreateListing />} /> 
         </Route>
       </Routes>

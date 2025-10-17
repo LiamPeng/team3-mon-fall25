@@ -1,6 +1,6 @@
 // src/pages/MyListings.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";   
+import { useNavigate } from "react-router-dom";
 import ListingCard from "../components/ListingCard";
 
 export default function MyListings() {
@@ -17,8 +17,7 @@ export default function MyListings() {
 
   // ✅ Removed alert and left a backend placeholder
   const editListing = (id) => {
-    console.log(`Edit listing ${id} clicked`);
-    // Backend team will implement functionality later
+    navigate(`/listing/${id}/edit`);
   };
 
   const deleteListing = (id) => {
