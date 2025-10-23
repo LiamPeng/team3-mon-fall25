@@ -89,17 +89,24 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': os.environ.get("DB_NAME", "nyu_marketplace"),
+#         'USER': os.environ.get("DB_USER", "nyu_app"),
+#         'PASSWORD': os.environ.get("DB_PASSWORD", "yourpassword"),
+#         'HOST': os.environ.get("DB_HOST", "127.0.0.1"),  # 或填 RDS host
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         }
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get("DB_NAME", "nyu_marketplace"),
-        'USER': os.environ.get("DB_USER", "nyu_app"),
-        'PASSWORD': os.environ.get("DB_PASSWORD", "yourpassword"),
-        'HOST': os.environ.get("DB_HOST", "127.0.0.1"),  # 或填 RDS host
-        'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
