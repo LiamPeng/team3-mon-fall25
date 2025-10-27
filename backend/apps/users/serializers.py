@@ -7,13 +7,16 @@ User = get_user_model()
 # User registration/login serializer
 class UserAuthSerializer(serializers.Serializer):
     """Serializer for user authentication (login/register)"""
+
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=6)
 
     def validate_email(self, value):
         """Validate that email ends with @nyu.edu"""
-        if not value.endswith('@nyu.edu'):
-            raise serializers.ValidationError("Only NYU email addresses (@nyu.edu) are allowed")
+        if not value.endswith("@nyu.edu"):
+            raise serializers.ValidationError(
+                "Only NYU email addresses (@nyu.edu) are allowed"
+            )
         return value
 
 
@@ -24,14 +27,14 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'user_id',
-            'email',
-            'first_name',
-            'last_name',
-            'netid',
-            'created_at',
+            "user_id",
+            "email",
+            "first_name",
+            "last_name",
+            "netid",
+            "created_at",
         ]
-        read_only_fields = ['user_id', 'created_at']
+        read_only_fields = ["user_id", "created_at"]
 
 
 # Compact user serializer for references
@@ -41,8 +44,8 @@ class CompactUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'user_id',
-            'email',
-            'netid',
+            "user_id",
+            "email",
+            "netid",
         ]
-        read_only_fields = ['user_id']
+        read_only_fields = ["user_id"]

@@ -1,15 +1,26 @@
 from rest_framework.decorators import action
 from django.shortcuts import render
 from rest_framework import viewsets, mixins, status
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, BasePermission, IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import (
+    IsAuthenticatedOrReadOnly,
+    BasePermission,
+    IsAuthenticated,
+    SAFE_METHODS,
+)
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from .models import Listing
-from .serializers import ListingCreateSerializer, ListingUpdateSerializer, CompactListingSerializer, ListingDetailSerializer
+from .serializers import (
+    ListingCreateSerializer,
+    ListingUpdateSerializer,
+    CompactListingSerializer,
+    ListingDetailSerializer,
+)
 from utils.s3_service import s3_service
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 # Custom permission class
 class IsOwnerOrReadOnly(BasePermission):
@@ -25,7 +36,9 @@ class IsOwnerOrReadOnly(BasePermission):
         # Write permissions (PUT, PATCH, DELETE) only allowed to the owner
         return obj.user == request.user
 
+
 # Create your views here.
+
 
 class ListingViewSet(
     mixins.CreateModelMixin,
@@ -34,26 +47,27 @@ class ListingViewSet(
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
-    ):
+):
     """
     A viewset for creating listings.
     Exposes a POST endpoint to /api/listings/.
     Supports multipart/form-data for image uploads.
     """
+
     queryset = Listing.objects.all()
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_serializer_class(self):
-        if self.action == 'create':
+        if self.action == "create":
             return ListingCreateSerializer
-        if self.action == 'update':
+        if self.action == "update":
             return ListingUpdateSerializer
-        if self.action == 'retrieve':
+        if self.action == "retrieve":
             return ListingDetailSerializer
-        if self.action in ['partial_update', 'update']:
+        if self.action in ["partial_update", "update"]:
             return ListingUpdateSerializer
-        if self.action == 'list' or self.action == 'user_listings':
+        if self.action == "list" or self.action == "user_listings":
             return CompactListingSerializer
         return ListingCreateSerializer
 
@@ -61,7 +75,7 @@ class ListingViewSet(
         """
         Set different permissions for different actions
         """
-        if self.action == 'user_listings':
+        if self.action == "user_listings":
             # User listings endpoint requires authentication
             return [IsAuthenticated()]
         return super().get_permissions()
@@ -74,7 +88,7 @@ class ListingViewSet(
         """Ensure user cannot change the owner of the listing"""
         serializer.save(user=self.request.user)
 
-    @action(detail=False, methods=['get'], url_path='user')
+    @action(detail=False, methods=["get"], url_path="user")
     def user_listings(self, request):
         """
         Get all listings for the authenticated user.
@@ -105,4 +119,3 @@ class ListingViewSet(
 
         # Delete the listing (will cascade delete ListingImage records)
         instance.delete()
-

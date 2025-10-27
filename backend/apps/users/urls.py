@@ -2,7 +2,7 @@ from rest_framework.routers import DefaultRouter
 from apps.users.views import AuthViewSet
 
 router = DefaultRouter()
-router.register('auth', AuthViewSet, basename='auth')
+router.register("auth", AuthViewSet, basename="auth")
 urlpatterns = router.urls
 
 """
