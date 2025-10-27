@@ -14,14 +14,14 @@ class S3Service:
 
     def __init__(self):
         self.s3_client = boto3.client(
-            's3',
+            "s3",
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_S3_REGION_NAME
+            region_name=settings.AWS_S3_REGION_NAME,
         )
         self.bucket_name = settings.AWS_STORAGE_BUCKET_NAME
 
-    def upload_image(self, image_file, resource_id, folder_name='listings'):
+    def upload_image(self, image_file, resource_id, folder_name="listings"):
         """
         Upload an image to S3 and return the public URL
 
@@ -38,8 +38,10 @@ class S3Service:
             self._validate_image(image_file)
 
             # Generate unique filename
-            file_extension = image_file.name.split('.')[-1].lower()
-            unique_filename = f"{folder_name}/{resource_id}/{uuid.uuid4()}.{file_extension}"
+            file_extension = image_file.name.split(".")[-1].lower()
+            unique_filename = (
+                f"{folder_name}/{resource_id}/{uuid.uuid4()}.{file_extension}"
+            )
 
             # Upload to S3 with public-read ACL
             self.s3_client.upload_fileobj(
@@ -47,9 +49,9 @@ class S3Service:
                 self.bucket_name,
                 unique_filename,
                 ExtraArgs={
-                    'ContentType': image_file.content_type,
-                    'ACL': 'public-read'
-                }
+                    "ContentType": image_file.content_type,
+                    "ACL": "public-read",
+                },
             )
 
             # Construct public URL
@@ -85,10 +87,7 @@ class S3Service:
                 return False
 
             # Delete from S3
-            self.s3_client.delete_object(
-                Bucket=self.bucket_name,
-                Key=key
-            )
+            self.s3_client.delete_object(Bucket=self.bucket_name, Key=key)
 
             logger.info(f"Successfully deleted image from S3: {key}")
             return True
@@ -105,7 +104,9 @@ class S3Service:
         try:
             # URL format: https://bucket-name.s3.region.amazonaws.com/key
             # Split by bucket name and take everything after
-            parts = url.split(f"{self.bucket_name}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/")
+            parts = url.split(
+                f"{self.bucket_name}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/"
+            )
             if len(parts) > 1:
                 return parts[1]
             return None
@@ -128,10 +129,12 @@ class S3Service:
             raise ValueError("Image file size cannot exceed 10MB")
 
         # Check file extension
-        allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
-        file_extension = image_file.name.split('.')[-1].lower()
+        allowed_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
+        file_extension = image_file.name.split(".")[-1].lower()
         if file_extension not in allowed_extensions:
-            raise ValueError(f"Invalid file extension. Allowed: {', '.join(allowed_extensions)}")
+            raise ValueError(
+                f"Invalid file extension. Allowed: {', '.join(allowed_extensions)}"
+            )
 
         # Validate it's actually an image using Pillow
         try:
