@@ -22,6 +22,11 @@ from django.urls import re_path
 urlpatterns = [
     path('api/users/', include('apps.users.urls')),
     path('api/listings/', include('apps.listings.urls')),
-    path("admin/", admin.site.urls),
-    re_path(r'^(?!api/|admin/).*$', TemplateView.as_view(template_name='index.html')),
+    path("admin/", admin.site.urls), 
+]
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+urlpatterns += [
+    re_path(r'^(?!api/|admin/|static/|assets/).*$', TemplateView.as_view(template_name='index.html')),
 ]
