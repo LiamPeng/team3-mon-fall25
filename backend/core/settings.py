@@ -182,6 +182,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default port
     "http://127.0.0.1:5173",
+    "https://nyu-marketplace-env.eba-vjpy9jfw.us-east-1.elasticbeanstalk.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -190,6 +191,7 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://nyu-marketplace-env.eba-vjpy9jfw.us-east-1.elasticbeanstalk.com",
 ]
 
 # For development, we can also exempt API endpoints from CSRF
