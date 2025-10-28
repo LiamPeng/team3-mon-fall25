@@ -218,9 +218,6 @@ class TestListingViewSet:
             assert response.status_code == status.HTTP_400_BAD_REQUEST
             assert Listing.objects.count() == 0
 
-    @pytest.mark.skip(
-        reason="Needs future implementation for multipart form validation with complex data."
-    )
     def test_complex_image_update(self, authenticated_client):
         """
         Verify that adding, removing, and updating images in a single request works.
@@ -231,10 +228,14 @@ class TestListingViewSet:
         image2 = ListingImageFactory(listing=listing)
         image3 = ListingImageFactory(listing=listing)
 
-        # Create a mock file for upload
-        mock_file = io.BytesIO(b"mock_image_content")
+        # Create a proper mock image file using PIL
+        from PIL import Image
+
+        mock_image = Image.new("RGB", (100, 100), color="red")
+        mock_file = io.BytesIO()
+        mock_image.save(mock_file, format="JPEG")
+        mock_file.seek(0)
         mock_file.name = "new_image.jpg"
-        mock_file.content_type = "image/jpeg"
 
         with patch("utils.s3_service.s3_service.upload_image") as mock_upload, patch(
             "utils.s3_service.s3_service.delete_image"
