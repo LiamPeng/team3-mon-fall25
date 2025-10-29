@@ -3,6 +3,34 @@ from rest_framework import serializers
 from django.db import models
 from apps.listings.models import Listing, ListingImage
 from utils.s3_service import s3_service
+import logging
+import json
+
+logger = logging.getLogger(__name__)
+
+
+class JSONSerializerField(serializers.Field):
+    """
+    Custom field to handle JSON strings in multipart form data.
+    Accepts both JSON strings and native Python objects.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.child_serializer = kwargs.pop("child_serializer", None)
+        super().__init__(*args, **kwargs)
+
+    def to_internal_value(self, data):
+        """Parse JSON string if needed"""
+        if isinstance(data, str):
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError:
+                raise serializers.ValidationError("Invalid JSON format")
+        return data
+
+    def to_representation(self, value):
+        """Return the value as-is"""
+        return value
 
 
 class ListingImageSerializer(serializers.ModelSerializer):
@@ -86,9 +114,6 @@ class ListingCreateSerializer(serializers.ModelSerializer):
             except Exception as e:
                 # If any image upload fails, we should handle it gracefully
                 # For now, log the error and continue with other images
-                import logging
-
-                logger = logging.getLogger(__name__)
                 logger.error(
                     f"Failed to upload image for listing {listing.listing_id}: {str(e)}"
                 )
@@ -139,13 +164,11 @@ class ListingUpdateSerializer(serializers.ModelSerializer):
         required=False,
     )
     # For removing existing images (provide image_ids)
-    remove_image_ids = serializers.ListField(
-        child=serializers.IntegerField(), write_only=True, required=False
-    )
+    # Uses JSONSerializerField to handle JSON strings in multipart requests
+    remove_image_ids = JSONSerializerField(write_only=True, required=False)
     # For updating image metadata (display_order, is_primary)
-    update_images = serializers.ListField(
-        child=serializers.DictField(), write_only=True, required=False
-    )
+    # Uses JSONSerializerField to handle JSON strings in multipart requests
+    update_images = JSONSerializerField(write_only=True, required=False)
     # Return updated images
     images = ListingImageSerializer(many=True, read_only=True)
 
@@ -190,9 +213,24 @@ class ListingUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Maximum 10 images allowed per batch")
         return value
 
+    def validate_remove_image_ids(self, value):
+        """Validate remove_image_ids is a list of integers"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("remove_image_ids must be a list")
+        for item in value:
+            if not isinstance(item, int):
+                raise serializers.ValidationError("All image IDs must be integers")
+        return value
+
     def validate_update_images(self, value):
         """Validate update_images structure"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("update_images must be a list")
         for item in value:
+            if not isinstance(item, dict):
+                raise serializers.ValidationError(
+                    "Each update_images item must be a dictionary"
+                )
             if "image_id" not in item:
                 raise serializers.ValidationError(
                     "Each update_images item must have 'image_id'"
@@ -201,10 +239,6 @@ class ListingUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
-        import logging
-
-        logger = logging.getLogger(__name__)
-
         # Extract image-related data
         new_images = validated_data.pop("new_images", [])
         remove_image_ids = validated_data.pop("remove_image_ids", [])
