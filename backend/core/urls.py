@@ -32,7 +32,7 @@ def health_ok(_):
     return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
-    path('api/users/', include('apps.users.urls')),
+    path('api/auyh/', include('apps.users.urls')),
     path('api/listings/', include('apps.listings.urls')),
     path("admin/", admin.site.urls), 
 ]
