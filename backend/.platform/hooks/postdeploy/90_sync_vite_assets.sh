@@ -5,6 +5,7 @@ APP_DIR="/var/app/current"
 BUILD_DIR="$APP_DIR/frontend_build"
 STATIC_ROOT="$APP_DIR/staticfiles"
 
+#
 echo "[postdeploy] Sync Vite build assets -> $STATIC_ROOT"
 mkdir -p "$STATIC_ROOT"
 
