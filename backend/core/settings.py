@@ -42,13 +42,13 @@ DEBUG = False
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 # Cookies / Security
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
-SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+# SESSION_COOKIE_SECURE = not DEBUG
+# CSRF_COOKIE_SECURE = not DEBUG
+# SECURE_SSL_REDIRECT = not DEBUG
+# SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+# SECURE_HSTS_PRELOAD = not DEBUG
+# SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # Application definition
 INSTALLED_APPS = [
@@ -153,6 +153,11 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [ BASE_DIR / "static" ]
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+TEMPLATES[0]["DIRS"] = [
+    BASE_DIR / "frontend_build",   # Vite build 的 index.html
+    BASE_DIR / "staticfiles",
+]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 

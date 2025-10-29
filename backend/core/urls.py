@@ -19,6 +19,17 @@ from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from django.conf import settings
 from django.views.decorators.cache import never_cache
+from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
+# SPA index.html（No CSRF）
+spa_view = method_decorator(csrf_exempt, name="dispatch")(
+    TemplateView.as_view(template_name="index.html")
+)
+
+def health_ok(_):
+    return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
     path('api/users/', include('apps.users.urls')),
@@ -28,8 +39,8 @@ urlpatterns = [
 
 # SPA fallback, excluding api/admin/static/media
 urlpatterns += [
-    re_path(r"^(?!api/|admin/|static/|media/).*$",
-            never_cache(TemplateView.as_view(template_name="index.html"))),
+    re_path(r"^(?!api/|admin/|static/|media/).*$", spa_view),
+    path("health", health_ok),
 ]
 
 # DEBUG only, Django serves static files
