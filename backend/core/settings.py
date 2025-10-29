@@ -36,7 +36,7 @@ if not SECRET_KEY:
             env_file.write(f"DJANGO_SECRET_KEY={SECRET_KEY}\n")
     
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'marketplace-env.eba-2uqrmgb2.us-east-1.elasticbeanstalk.com']
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
@@ -55,7 +55,6 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.listings",
     "rest_framework",
-    'django_extensions',
     "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -64,6 +63,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
+if DEBUG:
+    INSTALLED_APPS += ['django_extensions']
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
