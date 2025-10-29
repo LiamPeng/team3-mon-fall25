@@ -28,5 +28,5 @@ urlpatterns = [
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns += [
-    re_path(r'^(?!api/|admin/|static/|assets/).*$', TemplateView.as_view(template_name='index.html')),
+    re_path(r'^(?!api/|admin/|static/).*$', TemplateView.as_view(template_name='index.html')),
 ]
