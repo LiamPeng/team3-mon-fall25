@@ -15,9 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.views.generic import TemplateView
-from django.urls import re_path
+from django.conf import settings
+from django.views.decorators.cache import never_cache
 
 urlpatterns = [
     path('api/users/', include('apps.users.urls')),
@@ -25,8 +26,13 @@ urlpatterns = [
     path("admin/", admin.site.urls), 
 ]
 
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
+# SPA fallback, excluding api/admin/static/media
 urlpatterns += [
-    re_path(r'^(?!api/|admin/|static/).*$', TemplateView.as_view(template_name='index.html')),
+    re_path(r"^(?!api/|admin/|static/|media/).*$",
+            never_cache(TemplateView.as_view(template_name="index.html"))),
 ]
+
+# DEBUG only, Django serves static files
+if settings.DEBUG:
+    from django.conf.urls.static import static
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
