@@ -32,8 +32,8 @@ def health_ok(_):
     return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
-    path('api/auyh/', include('apps.users.urls')),
-    path('api/listings/', include('apps.listings.urls')),
+    path('api/v1/', include('apps.users.urls')),
+    path('api/v1/', include('apps.listings.urls')),
     path("admin/", admin.site.urls), 
 ]
 
