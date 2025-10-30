@@ -24,25 +24,42 @@ from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
-# SPA index.html（No CSRF). To avoid CSRF middleware's intercept
-spa_view = method_decorator(csrf_exempt, name="dispatch")(
-    TemplateView.as_view(template_name="index.html")
-)
+# # SPA index.html（No CSRF). To avoid CSRF middleware's intercept
+# spa_view = method_decorator(csrf_exempt, name="dispatch")(
+#     TemplateView.as_view(template_name="index.html")
+# )
 
 # EB/Load Balancer health check
 def health_ok(_):
     return HttpResponse("ok", content_type="text/plain")
 
+@csrf_exempt
+def spa_view(request):
+    index_path = os.path.join(settings.STATIC_ROOT, "index.html")
+    try:
+        with open(index_path, "r", encoding="utf-8") as f:
+            html = f.read()
+    except FileNotFoundError:
+        # 前端沒被同步上來 (postdeploy 沒跑成功 或 權限沒給)
+        return HttpResponse(
+            "index.html not found on server (did postdeploy run?)",
+            status=500,
+            content_type="text/plain",
+        )
+    return HttpResponse(html, content_type="text/html")
+
 urlpatterns = [
     path('api/v1/', include('apps.users.urls')),
     path('api/v1/', include('apps.listings.urls')),
     path("admin/", admin.site.urls),
+    
+    # health MUST come before catch-all
+    path("health", health_ok),
 ]
 
 # SPA fallback, excluding api/admin/static/media
 urlpatterns += [
     re_path(r"^(?!api/|admin/|static/|media/).*$", spa_view),
-    path("health", health_ok),
 ]
 
 # DEBUG only, Django serves static files
