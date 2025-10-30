@@ -1,6 +1,6 @@
 // Application routes configuration.
-import React from 'react';
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Home from "../pages/Home";
@@ -34,9 +34,9 @@ export default function AppRouter() {
             <Route path="/create-listing" element={<CreateListing />} />
             <Route path="/my-listings" element={<MyListings />} />
           </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
   );
 }
-
