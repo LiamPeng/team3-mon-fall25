@@ -16,10 +16,37 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.generic import TemplateView
+from django.conf import settings
+from django.views.decorators.cache import never_cache
+from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
+# SPA index.html（No CSRF). To avoid CSRF middleware's intercept
+spa_view = method_decorator(csrf_exempt, name="dispatch")(
+    TemplateView.as_view(template_name="index.html")
+)
+
+# EB/Load Balancer health check
+def health_ok(_):
+    return HttpResponse("ok", content_type="text/plain")
 
 urlpatterns = [
     path('api/v1/', include('apps.users.urls')),
     path('api/v1/', include('apps.listings.urls')),
     path("admin/", admin.site.urls),
 ]
+
+# SPA fallback, excluding api/admin/static/media
+urlpatterns += [
+    re_path(r"^(?!api/|admin/|static/|media/).*$", spa_view),
+    path("health", health_ok),
+]
+
+# DEBUG only, Django serves static files
+# If DEBUG=Flase, Nginx serves /static/ instead of Django
+if settings.DEBUG:
+    from django.conf.urls.static import static
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
