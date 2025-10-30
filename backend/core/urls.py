@@ -41,7 +41,6 @@ def spa_view(request):
         with open(index_path, "r", encoding="utf-8") as f:
             html = f.read()
     except FileNotFoundError:
-        # 前端沒被同步上來 (postdeploy 沒跑成功 或 權限沒給)
         return HttpResponse(
             "index.html not found on server (did postdeploy run?)",
             status=500,
@@ -53,8 +52,6 @@ urlpatterns = [
     path('api/v1/', include('apps.users.urls')),
     path('api/v1/', include('apps.listings.urls')),
     path("admin/", admin.site.urls),
-    
-    # health MUST come before catch-all
     path("health", health_ok),
 ]
 
