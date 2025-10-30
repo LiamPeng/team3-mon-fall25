@@ -41,7 +41,7 @@ if not SECRET_KEY:
             env_file.write(f"DJANGO_SECRET_KEY={SECRET_KEY}\n")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # ALLOWED_HOSTS = [
 #     "127.0.0.1",
