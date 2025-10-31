@@ -4,13 +4,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Home from "../pages/Home";
+import BrowseListings from "../pages/BrowseListings";
 import CreateListing from "../pages/CreateListing";
 import App from "../App";
 import MyListings from "../pages/MyListings";
 import ListingDetail from "../pages/ListingDetail";
 import EditListing from "../pages/EditListing";
 import Login from "../pages/Login";
-import BrowseListings from "../pages/BrowseListings";
 
 export default function AppRouter() {
   return (
@@ -29,16 +29,15 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           >
-            <Route path="/browse" element={<BrowseListings />} />
             <Route index element={<Home />} />
-            <Route path="/listing/:id" element={<ListingDetail />} />
-            <Route path="/listing/:id/edit" element={<EditListing />} />
-            <Route path="/create-listing" element={<CreateListing />} />
-            <Route path="/my-listings" element={<MyListings />} />
+              <Route path="/browse" element={<BrowseListings />} />
+              <Route path="/listing/:id" element={<ListingDetail />} />
+              <Route path="/listing/:id/edit" element={<EditListing />} />
+              <Route path="/create-listing" element={<CreateListing />} />
+              <Route path="/my-listings" element={<MyListings />} />
           </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
   );
 }
-

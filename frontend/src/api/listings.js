@@ -2,17 +2,17 @@ import apiClient from "./client"
 import {endpoints} from "./endpoints.js";
 
 export async function getListings(params = {}) {
-    const { data } = await apiClient.get(endpoints.listings, { params });
-    return data;
-  }
-  
+  const { data } = await apiClient.get(endpoints.listings, { params });
+  return data; // expecting { results, count, next, previous }
+}
+
 export async function getListing(id) {
     const {data} = await apiClient.get(`${endpoints.listings}${id}/`);
     return data;
 }
 
 export async function putListing(id, payload){
-    const {data} = await apiClient.put(`${endpoints.listings}${id}/`, payload);
+    const { data } = await apiClient.put(`${endpoints.listings}${id}/`, payload);
     return data;
 }
 
@@ -21,8 +21,12 @@ export async function patchListing(id, payload){
     return data;
 }
 
-export async function createListing(payload){
-    const {data} = await apiClient.post(endpoints.listings, payload)
+export async function updateListing(id, formData) {
+    const { data } = await apiClient.patch(`${endpoints.listings}${id}/`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
     return data;
 }
 
@@ -31,18 +35,15 @@ export async function getMyListings() {
     return data;
 }
 
-
-export async function markListingSold(listing) {
-    const payload = {
-        category: listing.category,
-        title: listing.title,
-        description: listing.description,
-        price: listing.price,
-        status: "sold",
-        location: listing.location,
-    };
-    return putListing(listing.listing_id, payload)
+export async function createListing(formData) {
+    const { data } = await apiClient.post(endpoints.listings, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+    return data;
 }
+
 // Delete listing
 export async function deleteListingAPI(listingId) {
   try {

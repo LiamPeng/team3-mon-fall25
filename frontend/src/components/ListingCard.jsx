@@ -7,6 +7,7 @@ export default function ListingCard({
   title,
   price,
   status,
+  imageUrl,
   onEdit,
   onDelete,
   onMarkSold,
@@ -15,7 +16,11 @@ export default function ListingCard({
   return (
     <div className="listing-card" onClick={onViewDetails}>
       <div className="image-placeholder">
-        <FaBoxOpen size={50} color="#4B2E83" />
+        {imageUrl ? (
+          <img src={imageUrl} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <FaBoxOpen size={50} color="#4B2E83" />
+        )}
       </div>
 
       <div className="listing-info">
