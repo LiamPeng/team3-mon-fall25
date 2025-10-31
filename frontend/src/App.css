@@ -3,6 +3,7 @@
   --purple:#56018D;
   --bg:#F5F6F8;
   --border:#E5E7EB;
+  --muted:#6B7280;
 }
 
 html, body, #root { height: 100%; background: var(--bg); }

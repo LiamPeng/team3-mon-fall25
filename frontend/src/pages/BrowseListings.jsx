@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import SearchBar from "../components/browse/SearchBar";
 import SortSelect from "../components/browse/SortSelect";
@@ -10,23 +10,92 @@ import Empty from "../components/common/Empty";
 import ErrorBlock from "../components/common/ErrorBlock";
 import { getListings } from "../api/listings";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 20; // should match backend pagination
+
+const sortToOrdering = (sort) => {
+  switch (sort) {
+    case "price_asc": return "price";
+    case "price_desc": return "-price";
+    case "oldest": return "created_at";
+    case "newest": return "-created_at";
+    case "title_asc": return "title";
+    case "title_desc": return "-title";
+    default: return "-created_at";
+  }
+};
+
+const dateRangeToPostedWithin = (dateRange) => {
+  if (dateRange === "24h") return 1;
+  if (dateRange === "7d") return 7;
+  if (dateRange === "30d") return 30;
+  return undefined;
+};
 
 export default function BrowseListings() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // URL → state (keeping for future use when backend supports filters)
+  // URL → state
   const q = params.get("q") ?? "";
   const sort = params.get("sort") ?? "newest";
   const page = Math.max(1, Number(params.get("page") ?? 1));
 
+  const initialFiltersFromUrl = {
+    category: params.get("category") ?? "",
+    location: params.get("location") ?? "",
+    dateRange: params.get("dateRange") ?? "",
+    priceMin: params.get("min_price") ?? "",
+    priceMax: params.get("max_price") ?? "",
+    availableOnly: params.get("availableOnly") === "1" ? true : false,
+  };
+
+  const [filters, setFilters] = useState(initialFiltersFromUrl);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({});
 
-  // Fetch listings
+  // Keep URL in sync when filters change
+  const syncUrl = (nextFilters, overrides = {}) => {
+    const next = new URLSearchParams(params);
+    // search
+    if (overrides.q !== undefined) {
+      if (overrides.q) next.set("q", overrides.q); else next.delete("q");
+    }
+    // sort
+    if (overrides.sort !== undefined) {
+      if (overrides.sort) next.set("sort", overrides.sort); else next.delete("sort");
+    }
+    // page
+    if (overrides.page !== undefined) {
+      next.set("page", String(overrides.page));
+    } else {
+      next.set("page", "1");
+    }
+    // filters
+    if (nextFilters.category) next.set("category", nextFilters.category); else next.delete("category");
+    if (nextFilters.location) next.set("location", nextFilters.location); else next.delete("location");
+    if (nextFilters.priceMin !== "" && nextFilters.priceMin != null) next.set("min_price", nextFilters.priceMin); else next.delete("min_price");
+    if (nextFilters.priceMax !== "" && nextFilters.priceMax != null) next.set("max_price", nextFilters.priceMax); else next.delete("max_price");
+    if (nextFilters.dateRange) next.set("dateRange", nextFilters.dateRange); else next.delete("dateRange");
+    if (nextFilters.availableOnly) next.set("availableOnly", "1"); else next.delete("availableOnly");
+
+    setParams(next, { replace: false });
+  };
+
+  // When URL changes externally (e.g., back/forward), update state
+  useEffect(() => {
+    setFilters({
+      category: params.get("category") ?? "",
+      location: params.get("location") ?? "",
+      dateRange: params.get("dateRange") ?? "",
+      priceMin: params.get("min_price") ?? "",
+      priceMax: params.get("max_price") ?? "",
+      availableOnly: params.get("availableOnly") === "1",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.toString()]);
+
+  // Fetch listings from backend (server-side filters)
   useEffect(() => {
     let cancelled = false;
 
@@ -34,20 +103,34 @@ export default function BrowseListings() {
       setLoading(true);
       setError(null);
       try {
-        // For now, fetch all listings without query parameters
-        // When backend supports filters, we can add them here
-        const result = await getListings();
+        const apiParams = {};
+
+        // search param for DRF SearchFilter
+        if (q) apiParams.search = q;
+
+        // ordering mapping
+        apiParams.ordering = sortToOrdering(sort);
+
+        // filters → backend params
+        if (filters.category) apiParams.category = filters.category;
+        if (filters.location) apiParams.location = filters.location;
+        if (filters.priceMin !== "" && filters.priceMin != null) apiParams.min_price = filters.priceMin;
+        if (filters.priceMax !== "" && filters.priceMax != null) apiParams.max_price = filters.priceMax;
+
+        const postedWithin = dateRangeToPostedWithin(filters.dateRange);
+        if (postedWithin !== undefined) apiParams.posted_within = postedWithin;
+
+        // pagination
+        apiParams.page = page;
+
+        const result = await getListings(apiParams);
 
         if (!cancelled) {
-          // Normalize the response
           if (Array.isArray(result)) {
-            // If API returns array directly
             setData({ results: result, count: result.length });
-          } else if (result.results) {
-            // If API returns paginated response
+          } else if (result && typeof result === "object" && "results" in result) {
             setData(result);
           } else {
-            // Fallback
             setData({ results: [], count: 0 });
           }
         }
@@ -55,98 +138,24 @@ export default function BrowseListings() {
         if (!cancelled) {
           console.error("Error loading listings:", e);
           setError(e?.response?.data?.message || e?.message || "Failed to load listings");
+          setData({ results: [], count: 0 });
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []); // Empty dependency array - fetch once on mount
-
-  // Client-side filtering and sorting (until backend supports it)
-  const filteredAndSortedListings = React.useMemo(() => {
-    if (!data?.results) return [];
-
-    let filtered = [...data.results];
-
-    // Apply search filter (client-side)
-    if (q) {
-      const searchLower = q.toLowerCase();
-      filtered = filtered.filter(item =>
-        item.title?.toLowerCase().includes(searchLower) ||
-        item.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply category filter (client-side)
-    if (filters.categories && filters.categories.length > 0) {
-      filtered = filtered.filter(item =>
-        filters.categories.includes(item.category)
-      );
-    }
-
-    // Apply dorm filter (client-side)
-    if (filters.dorms && filters.dorms.length > 0) {
-      filtered = filtered.filter(item =>
-        filters.dorms.includes(item.location)
-      );
-    }
-
-    // Apply price range filter (client-side)
-    if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
-      const min = filters.priceMin || 0;
-      const max = filters.priceMax || Infinity;
-      filtered = filtered.filter(item =>
-        item.price >= min && item.price <= max
-      );
-    }
-
-    // Apply available only filter (client-side)
-    if (filters.availableOnly) {
-      filtered = filtered.filter(item =>
-        item.status?.toLowerCase() === 'active'
-      );
-    }
-
-    // Apply sorting (client-side)
-    if (sort === "price_asc") {
-      filtered.sort((a, b) => a.price - b.price);
-    } else if (sort === "price_desc") {
-      filtered.sort((a, b) => b.price - a.price);
-    } else if (sort === "newest") {
-      filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
-
-    return filtered;
-  }, [data, q, sort, filters]);
-
-  // Pagination (client-side)
-  const paginatedListings = React.useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
-    const endIndex = startIndex + PAGE_SIZE;
-    return filteredAndSortedListings.slice(startIndex, endIndex);
-  }, [filteredAndSortedListings, page]);
+    return () => { cancelled = true; };
+  }, [q, sort, page, filters]); // refetch when any input changes
 
   // Handlers
   const handleSearch = (nextQ) => {
-    const next = new URLSearchParams(params);
-    next.set("q", nextQ);
-    next.set("page", "1");
-    setParams(next, { replace: false });
+    syncUrl(filters, { q: nextQ ?? "", page: 1 });
   };
 
   const handleSort = (nextSort) => {
-    const next = new URLSearchParams(params);
-    next.set("sort", nextSort);
-    next.set("page", "1");
-    setParams(next, { replace: false });
+    syncUrl(filters, { sort: nextSort, page: 1 });
   };
 
   const handlePage = (nextPage) => {
@@ -155,7 +164,13 @@ export default function BrowseListings() {
     setParams(next, { replace: false });
   };
 
-  const totalCount = filteredAndSortedListings.length;
+  const handleFiltersChange = (nextFilters) => {
+    setFilters(nextFilters);
+    syncUrl(nextFilters, { page: 1 });
+  };
+
+  const totalCount = data?.count ?? 0;
+  const items = useMemo(() => data?.results ?? [], [data]);
 
   return (
     <>
@@ -188,12 +203,12 @@ export default function BrowseListings() {
         }}>
           {/* Left Sidebar - Filters */}
           <aside style={{ position: "sticky", top: 24 }}>
-            <Filters initial={filters} onChange={setFilters} />
+            <Filters initial={filters} onChange={handleFiltersChange} />
           </aside>
 
           {/* Right Content Area */}
           <main>
-            {/* Sort and View Controls */}
+            {/* Sort and Count */}
             <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -206,30 +221,30 @@ export default function BrowseListings() {
               <SortSelect value={sort} onChange={handleSort} />
             </div>
 
-            {/* Loading State */}
+            {/* Loading */}
             {loading && (
               <div style={{ padding: "48px 0", display: "flex", justifyContent: "center" }}>
                 <Spinner />
               </div>
             )}
 
-            {/* Error State */}
+            {/* Error */}
             {!loading && error && (
               <ErrorBlock message="Something went wrong." onRetry={() => window.location.reload()} />
             )}
 
-            {/* Empty State */}
-            {!loading && !error && paginatedListings.length === 0 && (
+            {/* Empty */}
+            {!loading && !error && items.length === 0 && (
               <Empty
                 title="No results"
                 body={q ? "Try a different keyword or clearing filters." : "No active listings yet."}
               />
             )}
 
-            {/* Listings Grid */}
-            {!loading && !error && paginatedListings.length > 0 && (
+            {/* Results */}
+            {!loading && !error && items.length > 0 && (
               <>
-                <ListingGrid items={paginatedListings} />
+                <ListingGrid items={items} />
                 <div style={{ marginTop: 32 }}>
                   <Pagination
                     page={page}

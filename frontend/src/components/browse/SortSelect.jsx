@@ -20,8 +20,11 @@ export default function SortSelect({ value, onChange }) {
         }}
       >
         <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
         <option value="price_asc">Price: Low → High</option>
         <option value="price_desc">Price: High → Low</option>
+        <option value="title_asc">Title: A → Z</option>
+        <option value="title_desc">Title: Z → A</option>
       </select>
     </div>
   );
