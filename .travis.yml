@@ -61,7 +61,7 @@
 # will specify their own (python or node_js).
 language: shell
 os: linux
-dist: Noble
+dist: noble
 
 # Define the build stages. Jobs in 'test' run first (and in parallel).
 # If all 'test' jobs pass, jobs in 'deploy' will run.
@@ -207,13 +207,10 @@ jobs:
         
         # --- Monorepo Configuration ---
         edge: true           # Use the newer 'dpl v2'
-        dir: "backend" # (CRITICAL!) Only zip and deploy the 'backend' dir
         
         cleanup: false # Don't remove files before deploying
         on:
-          branch: develop # (CRITICAL!) Only run on the 'develop' branch
-          # (VERY IMPORTANT!) Set this to your main team repo.
-          # This stops forks from triggering a deploy.
+          branch: develop
           repo: iridiumtao/NYU-Marketplace
 
     # Job 2.2: Deploy to PROD Environment
@@ -262,11 +259,10 @@ jobs:
         
         # --- Monorepo Configuration ---
         edge: true
-        dir: "backend"
         
         cleanup: false
         on:
-          branch: main # (CRITICAL!) Only run on the 'main' branch
+          branch: main
           repo: gcivil-nyu-org/team3-mon-fall25
 
 # -----------------------------------------------------------------------------
