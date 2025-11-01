@@ -79,7 +79,7 @@ jobs:
 
     # Job 1.1: Backend (Django) Tests
     - stage: test
-    - name: "Backend (Django) Tests"
+      name: "Backend (Django) Tests"
       
       language: python
       python: "3.11"
