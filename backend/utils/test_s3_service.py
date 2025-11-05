@@ -94,8 +94,7 @@ def test_delete_image_failure(s3_service):
     s3_service.s3_client.delete_object.side_effect = ClientError(
         {"Error": {"Code": "404", "Message": "Not Found"}}, "delete_object"
     )
-    image_url = f"https://{s3_service.bucket_name}.s3.amazonaws.com/non-existent.jpg"
-
+    image_url = f"https://{s3_service.bucket_name}.s3.amazonaws.com/non-existent.jpg
     success = s3_service.delete_image(image_url)
 
     assert success is False

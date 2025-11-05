@@ -46,6 +46,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     netid = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_email_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -66,7 +67,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def id(self):
-        """Alias for user_id to maintain compatibility with JWT and Django internals"""
+        """
+        Alias for user_id to maintain compatibility with JWT and Django
+        internals
+        """
         return self.user_id
 
     @property
