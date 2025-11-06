@@ -119,7 +119,7 @@ class ListingCreateSerializer(serializers.ModelSerializer):
                 )
                 # Optionally, you could delete the listing
                 # if no images were uploaded successfully
-                
+
                 # API return 400
                 raise serializers.ValidationError(
                     f"Failed to upload image to S3: {str(e)}"
