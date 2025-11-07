@@ -210,7 +210,10 @@ export default function ListingDetail() {
     return () => {
       mounted = false;
     };
-  }, [listing?.user_netid, listing?.user_email, listing?.listing_id]);
+  // Depend on the listing object reference so this effect runs when the
+  // listing is updated. This satisfies the exhaustive-deps rule while
+  // preserving current behavior (we only run when listing changes).
+  }, [listing]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

@@ -34,7 +34,9 @@ export default function SellerProfile() {
   
   const [sellerListings, setSellerListings] = useState(getInitialListings);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // We only use the setter to report errors; the state value itself isn't read.
+  // Skip binding the value to avoid an unused variable eslint error.
+  const [, setError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
