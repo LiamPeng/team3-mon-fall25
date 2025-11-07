@@ -197,8 +197,8 @@ jobs:
             echo "Building for PROD environment..."
             npm run build:prod
           else
-            echo "Unknown branch for deployment: $TRAVIS_BRANCH"
-            exit 1
+            echo "Non-deployable branch: $TRAVIS_BRANCH"
+            npm run build:dev
           fi
         - cd ..
         - echo "Frontend build complete."
