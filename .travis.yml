@@ -185,7 +185,7 @@ jobs:
       script:
         # Finalize Coveralls (runs on ALL branches)
         - echo "Notifying Coveralls that all parallel testing jobs are complete..."
-        - npx coveralls --finish || echo "Coveralls finalize failed or not configured"
+        - cd frontend && npm run finalize-coverage || echo "Coveralls finalize failed or not configured"
         # Build frontend (runs on ALL branches, but only needed for develop/main)
         - echo "Starting production build for frontend..."
         - cd frontend
