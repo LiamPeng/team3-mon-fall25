@@ -132,7 +132,7 @@ jobs:
       after_success:
         # Upload coverage to Coveralls with parallel flag (this job runs in parallel with frontend)
         - echo "Uploading backend coverage to Coveralls..."
-        - cd backend && coveralls report --job-flag "Backend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER || echo "Coveralls upload failed or not configured"
+        - cd backend && coveralls report --repo-token=$COVERALLS_REPO_TOKEN --job-flag "Backend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER
 
     # Job 1.2: Frontend (React) Tests
     - name: "Frontend (React) Tests"
@@ -162,7 +162,7 @@ jobs:
       
       after_success:
         # Upload coverage to Coveralls with parallel flag (this job runs in parallel with backend)
-        - cd frontend && coveralls report --job-flag "Frontend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER || echo "Coveralls upload failed or not configured"
+        - cd frontend && coveralls report --repo-token=$COVERALLS_REPO_TOKEN --job-flag "Frontend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER
 
     # Job 1.3: Backend Compatibility Tests for Python 3.13
     - name: "Backend Compatibility Tests"
@@ -227,7 +227,7 @@ jobs:
 
       script:
         # Finalize parallel Coveralls build
-        - coveralls done --build-number $TRAVIS_BUILD_NUMBER || echo "Coveralls finalize failed"
+        - coveralls done --repo-token=$COVERALLS_REPO_TOKEN --build-number $TRAVIS_BUILD_NUMBER
         # Build frontend (runs on ALL branches, but only needed for develop/main)
         - echo "Starting production build for frontend..."
         - cd frontend
