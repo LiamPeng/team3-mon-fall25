@@ -132,7 +132,8 @@ jobs:
       after_success:
         # Upload coverage to Coveralls with parallel flag (this job runs in parallel with frontend)
         - echo "Uploading backend coverage to Coveralls..."
-        - cd backend && coveralls report --repo-token=$COVERALLS_REPO_TOKEN --job-flag "Backend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER
+        # Note: This command is expected to fail for Pull Requests from forks due to security restrictions on secrets.
+        - cd backend && coveralls report --repo-token=$COVERALLS_REPO_TOKEN --job-flag "Backend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER || echo "Coveralls upload failed or not configured (expected for fork PRs)"
 
     # Job 1.2: Frontend (React) Tests
     - name: "Frontend (React) Tests"
@@ -162,7 +163,8 @@ jobs:
       
       after_success:
         # Upload coverage to Coveralls with parallel flag (this job runs in parallel with backend)
-        - cd frontend && coveralls report --repo-token=$COVERALLS_REPO_TOKEN --job-flag "Frontend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER
+        # Note: This command is expected to fail for Pull Requests from forks due to security restrictions on secrets.
+        - cd frontend && coveralls report --repo-token=$COVERALLS_REPO_TOKEN --job-flag "Frontend Tests" --parallel --build-number $TRAVIS_BUILD_NUMBER || echo "Coveralls upload failed or not configured (expected for fork PRs)"
 
     # Job 1.3: Backend Compatibility Tests for Python 3.13
     - name: "Backend Compatibility Tests"
@@ -227,7 +229,8 @@ jobs:
 
       script:
         # Finalize parallel Coveralls build
-        - coveralls done --repo-token=$COVERALLS_REPO_TOKEN --build-number $TRAVIS_BUILD_NUMBER
+        # Note: This command is expected to fail for Pull Requests from forks due to security restrictions on secrets.
+        - coveralls done --repo-token=$COVERALLS_REPO_TOKEN --build-number $TRAVIS_BUILD_NUMBER || echo "Coveralls finalize failed (expected for fork PRs)"
         # Build frontend (runs on ALL branches, but only needed for develop/main)
         - echo "Starting production build for frontend..."
         - cd frontend
