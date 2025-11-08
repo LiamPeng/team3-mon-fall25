@@ -61,8 +61,6 @@ language: shell
 os: linux
 dist: noble
 
-git: { depth: false }
-
 # specify the order for stages
 stages:
   - name: test
