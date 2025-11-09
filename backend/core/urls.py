@@ -28,11 +28,6 @@ import os
 # )
 
 
-# EB/Load Balancer health check
-def health_ok(_):
-    return HttpResponse("ok", content_type="text/plain")
-
-
 @csrf_exempt
 def spa_view(request):
     index_path = os.path.join(settings.STATIC_ROOT, "index.html")
