@@ -1,4 +1,4 @@
-from .settings_dev import *
+from .settings_base import BASE_DIR
 
 # Use SQLite for CI tests (no MySQL needed)
 DATABASES = {
