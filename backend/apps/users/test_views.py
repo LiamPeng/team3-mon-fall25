@@ -25,7 +25,7 @@ class TestAuthViewSet:
         assert response.status_code == status.HTTP_201_CREATED
         assert "message" in response.data
         assert User.objects.filter(email="new.user@nyu.edu").exists()
-        
+
         user = User.objects.get(email="new.user@nyu.edu")
         assert user.is_email_verified is False  # User is created but not verified
 
@@ -36,11 +36,7 @@ class TestAuthViewSet:
         email = "existing.user@nyu.edu"
         password = "password123"
         # Create a user with email verified
-        User.objects.create_user(
-            email=email, 
-            password=password,
-            is_email_verified=True  
-        )
+        User.objects.create_user(email=email, password=password, is_email_verified=True)
 
         response = api_client.post(
             "/api/v1/auth/login/",
@@ -49,7 +45,6 @@ class TestAuthViewSet:
         )
         assert response.status_code == status.HTTP_200_OK
         assert "access_token" in response.data
-    
 
     def test_user_login_invalid_credentials(self, api_client):
         """
