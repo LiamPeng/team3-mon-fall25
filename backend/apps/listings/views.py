@@ -1,7 +1,7 @@
 import logging
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, F
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, pagination, status, viewsets
 from rest_framework.decorators import action
@@ -95,6 +95,9 @@ class ListingViewSet(
             queryset = queryset.order_by(ordering_param)
         else:
             queryset = queryset.order_by("-created_at")
+
+        # Performance optimizations to avoid N+1
+        queryset = queryset.select_related("user").prefetch_related("images")
 
         return queryset
 
@@ -320,3 +323,13 @@ class ListingViewSet(
                 )
 
         return Response({"conversation_id": str(conv.id)}, status=200)
+
+    # Record listing view-count
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        try:
+            obj = self.get_object()
+            Listing.objects.filter(pk=obj.pk).update(view_count=F("view_count") + 1)
+        except Exception:
+            pass
+        return response
