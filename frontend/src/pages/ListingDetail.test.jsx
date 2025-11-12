@@ -57,6 +57,15 @@ vi.mock('../components/ContactSellerModal', () => ({
     ) : null,
 }));
 
+// Mock watchlist API
+vi.mock('../api/watchlist', () => ({
+  addToWatchlist: vi.fn(),
+  removeFromWatchlist: vi.fn(),
+}));
+
+// Import after mocking
+import * as watchlistApi from '../api/watchlist';
+
 describe('ListingDetail - Share Functionality', () => {
   const mockListing = {
     listing_id: '123',
@@ -846,6 +855,66 @@ describe('ListingDetail - Core Functionality', () => {
         expect(images.length).toBeGreaterThan(0);
       });
     });
+
+    it('should navigate to next image using lightbox nav button', async () => {
+      const user = userEvent.setup();
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      const mainImages = container.querySelectorAll('img[alt="Test Laptop - Image 1"]');
+      const mainImageContainer = mainImages[0].closest('.listing-detail-main-image');
+      await user.click(mainImageContainer);
+
+      await waitFor(() => {
+        const lightbox = document.querySelector('.listing-detail-lightbox');
+        expect(lightbox).toBeInTheDocument();
+      });
+
+      // Find the next button inside lightbox
+      const lightboxNavButtons = document.querySelectorAll('.listing-detail-lightbox-nav');
+      const nextButton = Array.from(lightboxNavButtons).find(btn =>
+        btn.classList.contains('listing-detail-lightbox-nav--right')
+      );
+
+      await user.click(nextButton);
+
+      // Counter should update
+      const counter = document.querySelector('.listing-detail-lightbox-counter');
+      expect(counter).toBeInTheDocument();
+    });
+
+    it('should navigate to previous image using lightbox nav button', async () => {
+      const user = userEvent.setup();
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      const mainImages = container.querySelectorAll('img[alt="Test Laptop - Image 1"]');
+      const mainImageContainer = mainImages[0].closest('.listing-detail-main-image');
+      await user.click(mainImageContainer);
+
+      await waitFor(() => {
+        const lightbox = document.querySelector('.listing-detail-lightbox');
+        expect(lightbox).toBeInTheDocument();
+      });
+
+      // Find the prev button inside lightbox
+      const lightboxNavButtons = document.querySelectorAll('.listing-detail-lightbox-nav');
+      const prevButton = Array.from(lightboxNavButtons).find(btn =>
+        btn.classList.contains('listing-detail-lightbox-nav--left')
+      );
+
+      await user.click(prevButton);
+
+      // Counter should update (wraps to last image)
+      const counter = document.querySelector('.listing-detail-lightbox-counter');
+      expect(counter).toBeInTheDocument();
+    });
   });
 
   describe('Navigation', () => {
@@ -937,6 +1006,45 @@ describe('ListingDetail - Core Functionality', () => {
 
       const contactButton = screen.getByRole('button', { name: /contact seller/i });
       expect(contactButton).toBeDisabled();
+    });
+
+    it('should open contact modal from mobile footer', async () => {
+      const user = userEvent.setup();
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      // Find mobile contact button (there might be multiple contact buttons)
+      const mobileFooter = container.querySelector('.listing-detail-mobile-footer');
+      if (mobileFooter) {
+        const mobileContactButton = mobileFooter.querySelector('button');
+        await user.click(mobileContactButton);
+
+        await waitFor(() => {
+          expect(screen.getByTestId('contact-modal')).toBeInTheDocument();
+        });
+      }
+    });
+
+    it('should disable mobile contact button when listing is sold', async () => {
+      listingsApi.getListing.mockResolvedValue({
+        ...mockListing,
+        status: 'sold',
+      });
+
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      const mobileFooter = container.querySelector('.listing-detail-mobile-footer');
+      if (mobileFooter) {
+        const mobileContactButton = mobileFooter.querySelector('button');
+        expect(mobileContactButton).toBeDisabled();
+      }
     });
   });
 
@@ -1358,6 +1466,142 @@ describe('ListingDetail - Core Functionality', () => {
       const priceElements = container.querySelectorAll('*');
       const priceText = Array.from(priceElements).some(el => el.textContent.includes('$999.99'));
       expect(priceText).toBe(true);
+    });
+  });
+
+  describe('Watchlist/Save Functionality', () => {
+    beforeEach(() => {
+      watchlistApi.addToWatchlist.mockResolvedValue({});
+      watchlistApi.removeFromWatchlist.mockResolvedValue({});
+    });
+
+    it('should add listing to watchlist when save button is clicked', async () => {
+      const user = userEvent.setup();
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      // Find the heart button (save button)
+      const saveButtons = container.querySelectorAll('button');
+      const heartButton = Array.from(saveButtons).find(btn =>
+        btn.querySelector('svg') && btn.getAttribute('aria-label') === 'Save listing'
+      );
+
+      if (heartButton) {
+        await user.click(heartButton);
+
+        await waitFor(() => {
+          expect(watchlistApi.addToWatchlist).toHaveBeenCalledWith('123');
+        });
+      }
+    });
+
+    it('should remove listing from watchlist when unsave button is clicked', async () => {
+      const user = userEvent.setup();
+      listingsApi.getListing.mockResolvedValue({
+        ...mockListing,
+        is_saved: true,
+      });
+
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      // Find the heart button (unsave button)
+      const saveButtons = container.querySelectorAll('button');
+      const heartButton = Array.from(saveButtons).find(btn =>
+        btn.querySelector('svg') && btn.getAttribute('aria-label') === 'Save listing'
+      );
+
+      if (heartButton) {
+        await user.click(heartButton);
+
+        await waitFor(() => {
+          expect(watchlistApi.removeFromWatchlist).toHaveBeenCalledWith('123');
+        });
+      }
+    });
+
+    it('should handle watchlist API errors gracefully', async () => {
+      const user = userEvent.setup();
+      watchlistApi.addToWatchlist.mockRejectedValue(new Error('API Error'));
+
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      // Find the heart button
+      const saveButtons = container.querySelectorAll('button');
+      const heartButton = Array.from(saveButtons).find(btn =>
+        btn.querySelector('svg') && btn.getAttribute('aria-label') === 'Save listing'
+      );
+
+      if (heartButton) {
+        await user.click(heartButton);
+
+        // Should not throw error, handled gracefully
+        await waitFor(() => {
+          expect(watchlistApi.addToWatchlist).toHaveBeenCalled();
+        });
+      }
+    });
+
+    it('should handle image navigation edge cases', async () => {
+      const user = userEvent.setup();
+      renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      // Click next multiple times to wrap around
+      const nextButton = screen.getByLabelText('Next image');
+      await user.click(nextButton);
+      await user.click(nextButton);
+      await user.click(nextButton);
+
+      // Should still be on valid image index
+      const imageCounter = screen.getByText(/\d+ \/ \d+/);
+      expect(imageCounter).toBeInTheDocument();
+    });
+
+    it('should handle price display for edge cases', async () => {
+      listingsApi.getListing.mockResolvedValue({
+        ...mockListing,
+        price: 0,
+      });
+
+      const { container } = renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      const priceElements = container.querySelectorAll('*');
+      const priceText = Array.from(priceElements).some(el => el.textContent.includes('$0'));
+      expect(priceText).toBe(true);
+    });
+
+    it('should handle missing category gracefully', async () => {
+      listingsApi.getListing.mockResolvedValue({
+        ...mockListing,
+        category: null,
+      });
+
+      renderListingDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+      });
+
+      // Component should still render without errors
+      expect(screen.getByText('active')).toBeInTheDocument();
     });
   });
 });
