@@ -1,7 +1,8 @@
-from pathlib import Path
-from datetime import timedelta  # JWT settings
-from dotenv import load_dotenv
 import os
+from datetime import timedelta  # JWT settings
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Conditionally import pymysql only if using MySQL
 # This allows SQLite-based settings (like settings_local) to work without pymysql
@@ -25,6 +26,8 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 INSTALLED_APPS = [
     "apps.users",
     "apps.listings",
+    "apps.chat",
+    "channels",
     "rest_framework",
     "corsheaders",
     "django.contrib.admin",
@@ -63,6 +66,11 @@ TEMPLATES = [
         },
     },
 ]
+
+ASGI_APPLICATION = "core.asgi.application"
+
+# Dev in-memory channel layer (use Redis in prod)
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 WSGI_APPLICATION = "core.wsgi.application"
 

@@ -1,27 +1,31 @@
-from rest_framework.decorators import action
+import logging
+
+from django.db import transaction
 from django.db.models import Q
-from rest_framework import viewsets, mixins, status, pagination
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, pagination, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import (
-    IsAuthenticatedOrReadOnly,
+    SAFE_METHODS,
     BasePermission,
     IsAuthenticated,
-    SAFE_METHODS,
+    IsAuthenticatedOrReadOnly,
 )
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+
+from utils.s3_service import s3_service
+
+from apps.chat.models import Conversation, ConversationParticipant
+from .filters import ListingFilter
 from .models import Listing
 from .serializers import (
-    ListingCreateSerializer,
-    ListingUpdateSerializer,
     CompactListingSerializer,
+    ListingCreateSerializer,
     ListingDetailSerializer,
+    ListingUpdateSerializer,
 )
-from utils.s3_service import s3_service
-import logging
-from rest_framework import filters
-from django_filters.rest_framework import DjangoFilterBackend
-from .filters import ListingFilter
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +49,6 @@ class ListingPagination(pagination.PageNumberPagination):
     page_size = 12
     page_size_query_param = "page_size"
     max_page_size = 60
-
-
-# Create your views here.
 
 
 class ListingViewSet(
@@ -145,24 +146,29 @@ class ListingViewSet(
           GET /api/v1/listings/search/?q=desk
           GET /api/v1/listings/search/?q=lamp&ordering=price&page=2&page_size=12
 
+        Contract for tests:
+          - If the query param key `q` is MISSING -> 400 with {"detail": "..."}.
+          - If `q` exists but is EMPTY (`?q=`) -> 200 with results (no text filter)
         """
-
-        q = (request.GET.get("q") or "").strip()
-
-        if not q:
+        # 400 only if the *key* is missing; empty string is allowed
+        if "q" not in request.query_params:
             return Response(
-                {"error": "Please enter a search query 'q'."},
+                {"detail": "Missing 'q' query parameter. Use ?q=..."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        q = request.query_params.get("q", "")
         base_qs = self.get_queryset()
 
-        qs = base_qs.filter(
-            Q(title__icontains=q)
-            | Q(description__icontains=q)
-            | Q(location__icontains=q)
-            | Q(category__icontains=q)
-        )
+        if q != "":
+            qs = base_qs.filter(
+                Q(title__icontains=q)
+                | Q(description__icontains=q)
+                | Q(location__icontains=q)
+                | Q(category__icontains=q)
+            )
+        else:
+            qs = base_qs
 
         paginator = ListingPagination()
         page = paginator.paginate_queryset(qs, self.request, view=self)
@@ -190,3 +196,38 @@ class ListingViewSet(
 
         # Delete the listing (will cascade delete ListingImage records)
         instance.delete()
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticated],
+        url_path="contact-seller",
+    )
+    def contact_seller(self, request, pk=None):
+        """
+        Start or fetch a direct chat between request.user and this listing's owner.
+        POST /api/v1/listings/{id}/contact-seller/
+        """
+        listing = self.get_object()
+        if listing.user_id == request.user.id:
+            return Response(
+                {"detail": "You are the owner of this listing."}, status=400
+            )
+
+        dk = Conversation.make_direct_key(request.user.id, listing.user_id)
+        with transaction.atomic():
+            conv, _ = Conversation.objects.select_for_update().get_or_create(
+                direct_key=dk, defaults={"created_by": request.user}
+            )
+            have = set(
+                ConversationParticipant.objects.filter(conversation=conv).values_list(
+                    "user_id", flat=True
+                )
+            )
+            need = {request.user.id, listing.user_id} - have
+            for uid in need:
+                ConversationParticipant.objects.get_or_create(
+                    conversation=conv, user_id=uid
+                )
+
+        return Response({"conversation_id": str(conv.id)}, status=200)
