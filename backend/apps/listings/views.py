@@ -2,6 +2,7 @@ import logging
 
 from django.db import transaction
 from django.db.models import Q, F
+from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, pagination, status, viewsets
 from rest_framework.decorators import action
@@ -329,7 +330,22 @@ class ListingViewSet(
         response = super().retrieve(request, *args, **kwargs)
         try:
             obj = self.get_object()
-            Listing.objects.filter(pk=obj.pk).update(view_count=F("view_count") + 1)
+            cache_key = self._viewer_cache_key(request, obj.pk)  # obj.pk: listing_id
+            if not cache.get(cache_key):
+                Listing.objects.filter(pk=obj.pk).update(view_count=F("view_count") + 1)
+                cache.set(cache_key, 1, timeout=300)  # Same visit won't be counted in 5 minutes
         except Exception:
             pass
         return response
+    
+    def _viewer_cache_key(self, request, listing_id):
+        if request.user.is_authenticated:
+            ident = f"user:{request.user.id}"
+        else:
+            ip = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip() \
+                or request.META.get("REMOTE_ADDR", "")
+            ua = (request.META.get("HTTP_USER_AGENT") or "")[:64]
+            ident = f"ip:{ip}|ua:{ua}"
+            
+        return f"listing:view:{listing_id}:{ident}"
+
