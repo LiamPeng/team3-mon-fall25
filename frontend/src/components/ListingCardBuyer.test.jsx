@@ -105,4 +105,29 @@ describe('ListingCardBuyer', () => {
     expect(onSellerClick).toHaveBeenCalledWith('bob');
     expect(onClick).not.toHaveBeenCalled();
   });
+
+  it('supports keyboard activation on seller link (Enter)', () => {
+  const onSellerClick = vi.fn();
+
+  render(
+    <ListingCardBuyer
+      id={6}
+      title="Table"
+      price={80}
+      status="active"
+      imageUrl=""
+      sellerUsername="kevin"
+      onSellerClick={onSellerClick}
+    />,
+    { wrapper: MemoryRouter }
+  );
+
+  // Target node: .buyer-card__seller（role="link"）
+  const sellerRoleLink = screen.getByRole('link', { name: /@kevin/i });
+  fireEvent.keyDown(sellerRoleLink, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+  expect(onSellerClick).toHaveBeenCalledTimes(1);
+  expect(onSellerClick).toHaveBeenCalledWith('kevin');
+});
+
 });
