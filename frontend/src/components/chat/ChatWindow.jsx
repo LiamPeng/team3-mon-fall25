@@ -15,6 +15,8 @@ import "./ChatWindow.css";
  * @param {Function} [props.onListingClick] - Callback when listing is clicked
  * @param {Function} [props.onBack] - Callback for back button (mobile)
  * @param {boolean} [props.showBackButton=false] - Show back button (mobile)
+ * @param {string|null} [props.nextBefore] - Cursor for loading older messages
+ * @param {Function} [props.onLoadOlder] - Callback to load older messages
  */
 export default function ChatWindow({
   conversation,
@@ -24,13 +26,17 @@ export default function ChatWindow({
   onListingClick,
   onBack,
   showBackButton = false,
+  nextBefore = null,
+  onLoadOlder,
 }) {
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   // Group messages by date
@@ -93,6 +99,15 @@ export default function ChatWindow({
     );
   }
 
+  // Ensure otherUser exists with required properties
+  const otherUser = conversation.otherUser || { 
+    id: conversation.id || "unknown",
+    name: "User",
+    initials: "U",
+    isOnline: false,
+    memberSince: new Date().toISOString()
+  };
+
   // Get listing image - handle various formats
   const listingImage = conversation.listingImage || 
                        conversation.listing?.primary_image?.url ||
@@ -114,7 +129,7 @@ export default function ChatWindow({
             </button>
           )}
           <UserInfoBlock
-            user={conversation.otherUser || {}}
+            user={otherUser}
             showOnlineStatus={true}
             showMemberSince={true}
           />
@@ -145,6 +160,43 @@ export default function ChatWindow({
 
       {/* Messages */}
       <div className="chat-window__messages" ref={scrollAreaRef}>
+        {/* Load Older Button */}
+        {nextBefore !== null && onLoadOlder && (
+          <div style={{ padding: "12px", textAlign: "center" }}>
+            <button
+              onClick={onLoadOlder}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                background: "#fff",
+                cursor: "pointer",
+                fontSize: "14px",
+                color: "#374151",
+              }}
+            >
+              Load older
+            </button>
+          </div>
+        )}
+        {nextBefore === null && messages.length > 0 && (
+          <div style={{ padding: "12px", textAlign: "center" }}>
+            <button
+              disabled
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                background: "#f9fafb",
+                cursor: "not-allowed",
+                fontSize: "14px",
+                color: "#9ca3af",
+              }}
+            >
+              No more
+            </button>
+          </div>
+        )}
         {messageGroups.map((group, groupIndex) => (
           <div key={groupIndex}>
             {/* Date Separator */}
@@ -166,7 +218,7 @@ export default function ChatWindow({
                   key={message.id}
                   message={message}
                   isOwnMessage={isOwnMessage}
-                  otherUser={conversation.otherUser}
+                  otherUser={otherUser}
                   showAvatar={showAvatar}
                 />
               );
@@ -181,3 +233,5 @@ export default function ChatWindow({
     </div>
   );
 }
+
+

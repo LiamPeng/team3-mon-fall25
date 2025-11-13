@@ -26,6 +26,7 @@ export default function Chat() {
   const [selfId, setSelfId] = useState("");
   const [convs, setConvs] = useState([]);
   const [messages, setMessages] = useState({}); // conversationId -> messages array
+  const [nextBefore, setNextBefore] = useState({}); // conversationId -> next_before cursor
   const [isOpen, setIsOpen] = useState(true);
   const [previousPath, setPreviousPath] = useState(null);
   const [isFullPageMode, setIsFullPageMode] = useState(false); // Track full-page mode state
@@ -431,9 +432,13 @@ export default function Chat() {
   useEffect(() => {
     if (convs.length === 0 || !selfId) return;
     
-    const loadMessages = async (convId) => {
+    const loadMessages = async (convId, before = null) => {
       try {
-        const { results } = await getMessages(convId, { limit: 50 });
+        const params = { limit: 50 };
+        if (before) {
+          params.before = before;
+        }
+        const { results, next_before } = await getMessages(convId, params);
         // Transform messages to match our component structure
         const transformed = results.map((msg) => ({
           id: msg.id,
@@ -446,12 +451,58 @@ export default function Chat() {
           read: false, // Would need to check against last_read_message
         }));
         
-        setMessages((prev) => ({
+        setMessages((prev) => {
+          if (before) {
+            // Loading older messages - prepend to existing
+            const existing = prev[convId] || [];
+            // Avoid duplicates
+            const existingIds = new Set(existing.map(m => m.id));
+            const newMessages = transformed.filter(m => !existingIds.has(m.id));
+            return {
+              ...prev,
+              [convId]: [...newMessages, ...existing],
+            };
+          } else {
+            // Initial load - replace
+            return {
+              ...prev,
+              [convId]: transformed,
+            };
+          }
+        });
+        
+        // Store next_before cursor
+        setNextBefore((prev) => ({
           ...prev,
-          [convId]: transformed,
+          [convId]: next_before || null,
         }));
         
-        // Don't mark as read here - we'll do it when the conversation is actually clicked
+        // Mark as read if this is the active conversation and messages were loaded for the first time
+        // Only mark as read if this is the first load (before is null) and there are unread messages
+        if (!before && convId && selfId && transformed.length > 0) {
+          // Determine if this is the active conversation
+          const activeConvId = conversationId || (convs.length > 0 ? convs[0].id : null);
+          if (convId === activeConvId) {
+            // Find the most recent message that was NOT sent by current user
+            const unreadMessages = transformed.filter(
+              (msg) => String(msg.senderId) !== String(selfId)
+            );
+            
+            if (unreadMessages.length > 0) {
+              // Messages from API are sorted newest first, so first one is most recent
+              const mostRecentUnread = unreadMessages[0];
+              markRead(convId, mostRecentUnread.id).catch(() => {});
+              // Update unread count in conversations list
+              setConvs((prev) =>
+                prev.map((c) =>
+                  c.id === convId
+                    ? { ...c, unreadCount: 0 }
+                    : c
+                )
+              );
+            }
+          }
+        }
       } catch (e) {
         console.error(`Failed to load messages for ${convId}:`, e);
       }
@@ -462,7 +513,7 @@ export default function Chat() {
     
     // Always reload messages for the active conversation (in case new messages were sent)
     if (activeConvId) {
-      loadMessages(activeConvId, true); // Mark as active to trigger read marking
+      loadMessages(activeConvId, null); // Load initial messages
     }
     
     // Then load other conversations (only if not already loaded)
@@ -471,16 +522,23 @@ export default function Chat() {
         loadMessages(conv.id);
       }
     });
-  }, [convs, conversationId, selfId, messages]);
+  }, [convs, conversationId, selfId]);
 
   // WebSocket updates
   const activeConversationId = conversationId || (convs.length > 0 ? convs[0].id : null);
-  const { sendText } = useChatSocket({
+  const { sendText, sendRead } = useChatSocket({
     conversationId: activeConversationId,
     onMessage: (msg) => {
+      // Get conversation ID from message or use active conversation
+      const msgConversationId = msg.conversation || activeConversationId;
+      if (!msgConversationId) {
+        console.warn("Received WebSocket message without conversation ID:", msg);
+        return;
+      }
+
       const transformed = {
         id: msg.id,
-        conversationId: activeConversationId,
+        conversationId: msgConversationId,
         senderId: String(msg.sender || msg.senderId),
         content: msg.text,
         text: msg.text,
@@ -490,21 +548,21 @@ export default function Chat() {
       };
 
       setMessages((prev) => {
-        const existing = prev[activeConversationId] || [];
+        const existing = prev[msgConversationId] || [];
         // Avoid duplicates
         if (existing.find((m) => m.id === transformed.id)) {
           return prev;
         }
         return {
           ...prev,
-          [activeConversationId]: [transformed, ...existing],
+          [msgConversationId]: [transformed, ...existing],
         };
       });
 
       // Update conversation's last message
       setConvs((prev) =>
         prev.map((c) =>
-          c.id === activeConversationId
+          c.id === msgConversationId
             ? {
                 ...c,
                 lastMessage: {
@@ -518,9 +576,20 @@ export default function Chat() {
         )
       );
 
-      // Mark as read if from other user
-      if (String(msg.sender) !== String(selfId)) {
-        markRead(activeConversationId, msg.id).catch(() => {});
+      // Mark as read if from other user and this is the active conversation
+      if (String(msg.sender) !== String(selfId) && msgConversationId === activeConversationId) {
+        // Send read receipt via WebSocket
+        sendRead(msg.id);
+        // Also mark as read via REST API
+        markRead(msgConversationId, msg.id).catch(() => {});
+        // Also update unread count in conversations list
+        setConvs((prev) =>
+          prev.map((c) =>
+            c.id === msgConversationId
+              ? { ...c, unreadCount: 0 }
+              : c
+          )
+        );
       }
     },
   });
@@ -579,6 +648,47 @@ export default function Chat() {
   const handleListingClick = (listingId) => {
     if (listingId) {
       window.location.href = `/listing/${listingId}`;
+    }
+  };
+
+  // Handle loading older messages
+  const handleLoadOlder = async (conversationId) => {
+    const before = nextBefore[conversationId];
+    if (before) {
+      const loadMessages = async (convId, beforeCursor) => {
+        try {
+          const params = { limit: 50, before: beforeCursor };
+          const { results, next_before } = await getMessages(convId, params);
+          const transformed = results.map((msg) => ({
+            id: msg.id,
+            conversationId: msg.conversation,
+            senderId: String(msg.sender),
+            content: msg.text,
+            text: msg.text,
+            timestamp: msg.created_at,
+            created_at: msg.created_at,
+            read: false,
+          }));
+          
+          setMessages((prev) => {
+            const existing = prev[convId] || [];
+            const existingIds = new Set(existing.map(m => m.id));
+            const newMessages = transformed.filter(m => !existingIds.has(m.id));
+            return {
+              ...prev,
+              [convId]: [...newMessages, ...existing],
+            };
+          });
+          
+          setNextBefore((prev) => ({
+            ...prev,
+            [convId]: next_before || null,
+          }));
+        } catch (e) {
+          console.error(`Failed to load older messages for ${convId}:`, e);
+        }
+      };
+      await loadMessages(conversationId, before);
     }
   };
 
@@ -678,6 +788,8 @@ export default function Chat() {
           currentUserId={selfId}
           asPage={isFullPageMode} // Use full-page mode state
           onFullPageChange={setIsFullPageMode} // Pass callback to update state
+          nextBefore={nextBefore}
+          onLoadOlder={handleLoadOlder}
         />
       )}
     </>

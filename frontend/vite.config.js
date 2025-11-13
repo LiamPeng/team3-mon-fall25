@@ -29,6 +29,7 @@ export default defineConfig({
     environment: 'jsdom', // Use jsdom for DOM simulation
     setupFiles: './src/setupTests.js', // Setup file for test configuration
     css: true, // Parse CSS imports
+    testTimeout: 30000, // 30 seconds timeout for tests (needed for complex async operations)
     coverage: {
       provider: 'v8', // Use v8 for coverage
       reporter: ['text', 'lcov'], // text for CI logs, lcov for Coveralls

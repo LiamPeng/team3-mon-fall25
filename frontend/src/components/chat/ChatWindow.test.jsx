@@ -122,8 +122,11 @@ describe("ChatWindow", () => {
         />
       );
       // Should show date separator (Today, Yesterday, or date)
-      const dateSeparator = screen.getByText(/Today|Yesterday|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/);
-      expect(dateSeparator).toBeInTheDocument();
+      // Use querySelector to find the date separator by class to avoid matching "Member since Jan 2023"
+      const dateSeparatorElement = document.querySelector('.chat-window__date-label');
+      expect(dateSeparatorElement).toBeInTheDocument();
+      // Verify it contains a date-like text
+      expect(dateSeparatorElement?.textContent).toMatch(/^(Today|Yesterday|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/);
     });
   });
 
@@ -256,3 +259,4 @@ describe("ChatWindow", () => {
     });
   });
 });
+

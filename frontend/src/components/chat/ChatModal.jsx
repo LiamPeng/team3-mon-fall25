@@ -16,6 +16,8 @@ import "./ChatModal.css";
  * @param {Function} [props.onListingClick] - Callback when listing is clicked
  * @param {string} [props.initialConversationId] - Initial conversation to open
  * @param {string} props.currentUserId - Current user's ID
+ * @param {Object} [props.nextBefore] - Object mapping conversationId to next_before cursor
+ * @param {Function} [props.onLoadOlder] - Callback to load older messages (conversationId)
  */
 export default function ChatModal({
   open,
@@ -29,6 +31,8 @@ export default function ChatModal({
   currentUserId,
   asPage = false, // If true, render as full page instead of modal
   onFullPageChange, // Callback to notify parent of full-page mode changes
+  nextBefore = {},
+  onLoadOlder,
 }) {
   const [activeConversationId, setActiveConversationId] = useState(
     initialConversationId || (conversations.length > 0 ? conversations[0].id : null)
@@ -60,6 +64,25 @@ export default function ChatModal({
       }
     }
   }, [initialConversationId, isMobile]);
+
+  // Auto-select first conversation and mark as read when conversations are loaded
+  useEffect(() => {
+    if (conversations.length > 0 && !activeConversationId && !initialConversationId) {
+      const firstConvId = conversations[0].id;
+      setActiveConversationId(firstConvId);
+    }
+  }, [conversations, activeConversationId, initialConversationId]);
+
+  // Call onConversationSelect when activeConversationId is set and messages are available
+  useEffect(() => {
+    if (activeConversationId && externalOnConversationSelect && messages[activeConversationId]?.length > 0) {
+      // Small delay to ensure messages are fully loaded
+      const timer = setTimeout(() => {
+        externalOnConversationSelect(activeConversationId);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeConversationId, messages, externalOnConversationSelect]);
 
   // Handle dragging
   useEffect(() => {
@@ -127,6 +150,7 @@ export default function ChatModal({
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const activeMessages = activeConversationId ? messages[activeConversationId] || [] : [];
+  const activeNextBefore = activeConversationId ? nextBefore[activeConversationId] || null : null;
 
   const handleConversationSelect = (conversationId) => {
     setActiveConversationId(conversationId);
@@ -225,6 +249,8 @@ export default function ChatModal({
                     onListingClick={onListingClick}
                     onBack={handleBack}
                     showBackButton={true}
+                    nextBefore={activeNextBefore}
+                    onLoadOlder={() => onLoadOlder?.(activeConversationId)}
                   />
                 </div>
               ) : null}
@@ -249,6 +275,8 @@ export default function ChatModal({
                     currentUserId={currentUserId}
                     onSendMessage={handleSend}
                     onListingClick={onListingClick}
+                    nextBefore={activeNextBefore}
+                    onLoadOlder={() => onLoadOlder?.(activeConversationId)}
                   />
                 ) : (
                   <div className="chat-modal__empty">
@@ -330,6 +358,8 @@ export default function ChatModal({
                   onListingClick={onListingClick}
                   onBack={handleBack}
                   showBackButton={true}
+                  nextBefore={activeNextBefore}
+                  onLoadOlder={() => onLoadOlder?.(activeConversationId)}
                 />
               </div>
             ) : null}
@@ -354,6 +384,8 @@ export default function ChatModal({
                   currentUserId={currentUserId}
                   onSendMessage={handleSend}
                   onListingClick={onListingClick}
+                  nextBefore={activeNextBefore}
+                  onLoadOlder={() => onLoadOlder?.(activeConversationId)}
                 />
               ) : (
                 <div className="chat-modal__empty">
