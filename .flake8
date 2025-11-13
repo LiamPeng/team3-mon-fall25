@@ -22,4 +22,5 @@ exclude =
 
 per-file-ignores =
   backend/apps/chat/urls.py:E501
+  backend/core/settings_ci.py:F405
 
