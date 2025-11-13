@@ -1,12 +1,14 @@
 import io
 import json
 from unittest.mock import patch
-
 import pytest
 from apps.listings.models import Listing
 from rest_framework import serializers, status
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APIRequestFactory
 from tests.factories.factories import ListingFactory, ListingImageFactory, UserFactory
+from django.core.cache import cache
+from django.contrib.sessions.middleware import SessionMiddleware
+from apps.listings.views import ListingViewSet
 
 
 @pytest.fixture
@@ -452,3 +454,205 @@ class TestListingViewSet:
         r3 = api_client.get("/api/v1/listings/search/?q=desk&page_size=5")
         assert r3.status_code == status.HTTP_200_OK
         assert len(r3.data["results"]) == 5
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache_between_tests():
+    """Make sure per-viewer cache is clean so tests don't affect each other."""
+    cache.clear()
+    yield
+    cache.clear()
+    
+@pytest.mark.django_db
+class TestListingViewSetTracking:
+    def test_retrieve_does_not_increment_without_flags(self, api_client):
+        """
+        No ?track_view=1 and no X-Track-View header => do NOT increment.
+        """
+        listing = ListingFactory(view_count=0)
+        r = api_client.get(f"/api/v1/listings/{listing.listing_id}/")
+        assert r.status_code == 200
+        listing.refresh_from_db()
+        assert listing.view_count == 0
+
+    def test_retrieve_requires_both_param_and_header(self, api_client):
+        """
+        Must have BOTH ?track_view=1 AND X-Track-View: 1 to increment.
+        Each alone should not increment.
+        """
+        listing = ListingFactory(view_count=0)
+        url = f"/api/v1/listings/{listing.listing_id}/"
+
+        # Only query param
+        r1 = api_client.get(url + "?track_view=1")
+        assert r1.status_code == 200
+        listing.refresh_from_db()
+        assert listing.view_count == 0
+
+        # Only header
+        r2 = api_client.get(url, HTTP_X_TRACK_VIEW="1")
+        assert r2.status_code == 200
+        listing.refresh_from_db()
+        assert listing.view_count == 0
+
+    def test_retrieve_increments_once_and_caches_same_viewer(self, api_client):
+        """
+        Same viewer (same UA/IP) within cache window should only count once.
+        """
+        listing = ListingFactory(view_count=0)
+        url = f"/api/v1/listings/{listing.listing_id}/?track_view=1"
+
+        # First hit increments
+        r1 = api_client.get(
+            url,
+            HTTP_X_TRACK_VIEW="1",
+            HTTP_USER_AGENT="UA-A",
+            REMOTE_ADDR="1.1.1.1",
+        )
+        assert r1.status_code == 200
+        listing.refresh_from_db()
+        assert listing.view_count == 1
+
+        # Re-hit by same viewer should NOT increment
+        r2 = api_client.get(
+            url,
+            HTTP_X_TRACK_VIEW="1",
+            HTTP_USER_AGENT="UA-A",
+            REMOTE_ADDR="1.1.1.1",
+        )
+        assert r2.status_code == 200
+        listing.refresh_from_db()
+        assert listing.view_count == 1
+
+    def test_retrieve_different_viewers_increment_separately(self, api_client):
+        """
+        Changing UA/IP/X-Forwarded-For counts as different viewers.
+        """
+        listing = ListingFactory(view_count=0)
+        url = f"/api/v1/listings/{listing.listing_id}/?track_view=1"
+
+        # Viewer 1
+        _ = api_client.get(
+            url, HTTP_X_TRACK_VIEW="1", HTTP_USER_AGENT="UA-A", REMOTE_ADDR="1.1.1.1"
+        )
+        listing.refresh_from_db()
+        assert listing.view_count == 1
+
+        # Viewer 2 (different UA)
+        _ = api_client.get(
+            url, HTTP_X_TRACK_VIEW="1", HTTP_USER_AGENT="UA-B", REMOTE_ADDR="1.1.1.1"
+        )
+        listing.refresh_from_db()
+        assert listing.view_count == 2
+
+        # Viewer 3 (same UA, but with X-Forwarded-For; take first IP)
+        _ = api_client.get(
+            url,
+            HTTP_X_TRACK_VIEW="1",
+            HTTP_USER_AGENT="UA-B",
+            HTTP_X_FORWARDED_FOR="2.2.2.2, 3.3.3.3",
+        )
+        listing.refresh_from_db()
+        assert listing.view_count == 3
+
+    def test_retrieve_authenticated_users_count_separately(self, authenticated_client):
+        """
+        Logged-in users are deduped by user identity; different users increment.
+        """
+        client1, user1 = authenticated_client
+        listing = ListingFactory(view_count=0)
+        url = f"/api/v1/listings/{listing.listing_id}/?track_view=1"
+
+        # user1
+        _ = client1.get(url, HTTP_X_TRACK_VIEW="1")
+        listing.refresh_from_db()
+        assert listing.view_count == 1
+
+        # user2
+        client2 = APIClient()
+        user2 = UserFactory()
+        client2.force_authenticate(user=user2)
+        _ = client2.get(url, HTTP_X_TRACK_VIEW="1")
+        listing.refresh_from_db()
+        assert listing.view_count == 2
+
+        # user1 again -> no increment
+        _ = client1.get(url, HTTP_X_TRACK_VIEW="1")
+        listing.refresh_from_db()
+        assert listing.view_count == 2
+
+
+@pytest.mark.django_db
+class TestViewerCacheKey:
+    def _attach_session(self, request):
+        """Attach a Django session to a factory-made request."""
+        middleware = SessionMiddleware(lambda x: x)
+        middleware.process_request(request)
+        request.session.save()
+        return request
+
+    def test_cache_key_anonymous_no_session_uses_ip_ua(self):
+        """
+        Anonymous without session -> fallback to IP + UA.
+        """
+        factory = APIRequestFactory()
+        view = ListingViewSet()
+        listing_id = 123
+
+        req1 = factory.get("/x", HTTP_USER_AGENT="UA1", REMOTE_ADDR="10.0.0.1")
+        key1 = view._viewer_cache_key(req1, listing_id)
+        assert isinstance(key1, str) and key1
+
+        # Different UA => different key
+        req2 = factory.get("/x", HTTP_USER_AGENT="UA2", REMOTE_ADDR="10.0.0.1")
+        key2 = view._viewer_cache_key(req2, listing_id)
+        assert key2 and key2 != key1
+
+        # X-Forwarded-For (first IP)
+        req3 = factory.get(
+            "/x",
+            HTTP_USER_AGENT="UA2",
+            HTTP_X_FORWARDED_FOR="20.20.20.20, 30.30.30.30",
+        )
+        key3 = view._viewer_cache_key(req3, listing_id)
+        assert key3 and key3 != key2
+
+    def test_cache_key_anonymous_with_session_prefers_session(self):
+        """
+        Anonymous with session -> prefer session-based key (stable & different from IP/UA).
+        """
+        factory = APIRequestFactory()
+        view = ListingViewSet()
+        listing_id = 456
+
+        req_ip_ua = factory.get("/x", HTTP_USER_AGENT="UA1", REMOTE_ADDR="1.2.3.4")
+        key_ip_ua = view._viewer_cache_key(req_ip_ua, listing_id)
+
+        req_session = factory.get("/x")
+        self._attach_session(req_session)
+        key_session_1 = view._viewer_cache_key(req_session, listing_id)
+        key_session_2 = view._viewer_cache_key(req_session, listing_id)
+
+        assert key_session_1 and key_session_1 != key_ip_ua
+        assert key_session_1 == key_session_2  # stable for same session
+
+    def test_cache_key_authenticated_user(self):
+        """
+        Authenticated users -> user-based key (stable per user+listing).
+        """
+        factory = APIRequestFactory()
+        view = ListingViewSet()
+        listing_id = 789
+
+        user_a = UserFactory()
+        req_a = factory.get("/x")
+        req_a.user = user_a
+        key_a1 = view._viewer_cache_key(req_a, listing_id)
+        key_a2 = view._viewer_cache_key(req_a, listing_id)
+        assert key_a1 == key_a2 and key_a1
+
+        user_b = UserFactory()
+        req_b = factory.get("/x")
+        req_b.user = user_b
+        key_b = view._viewer_cache_key(req_b, listing_id)
+        assert key_b and key_b != key_a1
