@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { FaBoxOpen, FaUser, FaClock, FaEye } from "react-icons/fa";
 import { humanizePosted } from "../utils/date";
 import "./ListingCardBuyer.css";
@@ -15,7 +16,10 @@ export default function ListingCardBuyer({
   onClick,
   onRemove,
   onViewDetails,
+  onSellerClick,
 }) {
+  const navigate = useNavigate();
+
   const isSold = String(status || "").toLowerCase() === "sold";
 
   // Check if we have a valid image URL
@@ -43,6 +47,22 @@ export default function ListingCardBuyer({
 
   // Date String
   const postedText = createdAt ? humanizePosted(createdAt) : "";
+
+  const sellerProfilePath = (u) => `/seller/${encodeURIComponent(u)}`;
+
+  const handleSellerClick = (e) => {
+    e.stopPropagation();
+    if (!sellerUsername) return;
+    if (onSellerClick) onSellerClick(sellerUsername);
+    else navigate(sellerProfilePath(sellerUsername));
+  };
+
+  const handleSellerKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleSellerClick(e);
+    }
+  };
 
   return (
     <div className="buyer-card" style={{ position: "relative" }}>
@@ -126,10 +146,11 @@ export default function ListingCardBuyer({
                 {sellerUsername && (
                   <span
                     className="buyer-card__seller"
+                    role="link"
+                    tabIndex={0}
                     title={`@${sellerUsername}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
+                    onClick={handleSellerClick}
+                    onKeyDown={handleSellerKeyDown}
                   >
                     <FaUser className="buyer-card__icon" aria-hidden="true" />
                     <span>Listed by @{sellerUsername}</span>
