@@ -41,7 +41,7 @@ export default function ListingDetail() {
     (async () => {
       try {
         setLoading(true);
-        const data = await getListing(id);
+        const data = await getListing(id, { trackView: true });
         if (mounted) {
           setListing(data);
           setCurrentImageIndex(0); // Reset image index when listing changes
