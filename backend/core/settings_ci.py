@@ -1,4 +1,9 @@
-from .settings_base import BASE_DIR
+from .settings_base import *  # noqa: F403, F401
+from django.core.management.utils import get_random_secret_key
+
+# Ensure SECRET_KEY is set for CI tests
+if not SECRET_KEY:  # noqa: F405
+    SECRET_KEY = get_random_secret_key()
 
 # Use SQLite for CI tests (no MySQL needed)
 DATABASES = {
