@@ -1,5 +1,10 @@
-from .settings_base import *  # noqa: F403, F401
 import os
+from .settings_base import *  # noqa: F403, F401
+
+try:
+    from .settings_local import *  # noqa
+except ImportError:
+    pass
 
 DEBUG = True
 
@@ -44,6 +49,10 @@ DATABASES = {
         },
     }
 }
+
+# settings.py (DEV ONLY)
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
 
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
