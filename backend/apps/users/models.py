@@ -39,7 +39,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     """Custom User model with email-based authentication"""
 
-    id = models.AutoField(primary_key=True, db_column='user_id')
+    id = models.AutoField(primary_key=True, db_column="user_id")
     email = models.EmailField(unique=True, max_length=255)
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
