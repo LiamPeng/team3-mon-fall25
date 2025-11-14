@@ -105,11 +105,15 @@ If you didn't request this code, please ignore this email.
         return False
 
 
+def _normalized_email(email: str) -> str:
+    return email.lower().strip()
+
+
 def store_otp(email: str, otp: str) -> None:
     """
     Store hashed OTP in cache with expiration
     """
-    cache_key = f"otp_{email}"
+    cache_key = f"otp_{_normalized_email(email)}"
     hashed_otp = hash_otp(otp)
     cache.set(cache_key, hashed_otp, timeout=OTP_EXPIRATION_MINUTES * 60)
 
@@ -119,7 +123,7 @@ def get_otp(email: str) -> str:
     Retrieve OTP from cache
     Returns None if OTP doesn't exist or has expired
     """
-    cache_key = f"otp_{email}"
+    cache_key = f"otp_{_normalized_email(email)}"
     return cache.get(cache_key)
 
 
@@ -193,5 +197,5 @@ def delete_otp(email: str) -> None:
     """
     Delete OTP from cache (useful for cleanup)
     """
-    cache_key = f"otp_{email}"
+    cache_key = f"otp_{_normalized_email(email)}"
     cache.delete(cache_key)
