@@ -13,6 +13,7 @@ from rest_framework.permissions import (
     BasePermission,
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
+    AllowAny,
 )
 from rest_framework.response import Response
 from django.core.exceptions import RequestDataTooBig
@@ -117,12 +118,23 @@ class ListingViewSet(
 
     def get_permissions(self):
         """
-        Set different permissions for different actions
+        Set different permissions for different actions:
+
+        - list / retrieve / search: public (no auth required)
+        - user_listings: must be authenticated
+        - everything else: default (create/update/delete protected)
         """
+        # Public read-only endpoints
+        if self.action in ["list", "retrieve", "search"]:
+            return [AllowAny()]
+
+        # User's own listings require auth
         if self.action == "user_listings":
-            # User listings endpoint requires authentication
             return [IsAuthenticated()]
-        return super().get_permissions()
+
+        # Default: respect view’s base permissions
+        # (create/update/destroy + other actions)
+        return [IsAuthenticatedOrReadOnly(), IsOwnerOrReadOnly()]
 
     def create(self, request, *args, **kwargs):
         """Handle create with error handling for large uploads"""
