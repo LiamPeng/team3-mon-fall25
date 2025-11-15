@@ -6,7 +6,7 @@ try:
 except ImportError:
     pass
 
-DEBUG = True
+DEBUG = False
 
 # Avoid cache issues
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"

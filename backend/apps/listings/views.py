@@ -13,6 +13,7 @@ from rest_framework.permissions import (
     BasePermission,
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
+    AllowAny,
 )
 from rest_framework.response import Response
 from django.core.exceptions import RequestDataTooBig
@@ -67,7 +68,8 @@ class ListingViewSet(
     Supports multipart/form-data for image uploads.
     """
 
-    queryset = Listing.objects.filter(status="active")
+    queryset = Listing.objects.all()
+
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
@@ -84,11 +86,14 @@ class ListingViewSet(
     def get_queryset(self):
         queryset = super().get_queryset()
 
+        # Only public list/search should be restricted to active listings
+        if self.action in ["list", "search"]:
+            queryset = queryset.filter(status="active")
+
         allowed_fields = {"created_at", "price", "title"}
         ordering_param = self.request.query_params.get("ordering")
 
         if ordering_param:
-            # any mistake if made at the end of the URL will be stripped
             ordering_param = ordering_param.strip()
             raw = ordering_param.lstrip("-")
             if raw not in allowed_fields:
@@ -117,12 +122,23 @@ class ListingViewSet(
 
     def get_permissions(self):
         """
-        Set different permissions for different actions
+        Set different permissions for different actions:
+
+        - list / retrieve / search: public (no auth required)
+        - user_listings: must be authenticated
+        - everything else: default (create/update/delete protected)
         """
+        # Public read-only endpoints
+        if self.action in ["list", "retrieve", "search"]:
+            return [AllowAny()]
+
+        # User's own listings require auth
         if self.action == "user_listings":
-            # User listings endpoint requires authentication
             return [IsAuthenticated()]
-        return super().get_permissions()
+
+        # Default: respect view’s base permissions
+        # (create/update/destroy + other actions)
+        return [IsAuthenticatedOrReadOnly(), IsOwnerOrReadOnly()]
 
     def create(self, request, *args, **kwargs):
         """Handle create with error handling for large uploads"""
