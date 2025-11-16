@@ -65,7 +65,7 @@ const EditListing = () => {
   const handleNewImagesChange = (e) => {
     const files = Array.from(e.target.files);
     setError("");
-    
+
     const totalImages = existingImages.length - removeImageIds.length + files.length;
 
     if (totalImages > 10) {

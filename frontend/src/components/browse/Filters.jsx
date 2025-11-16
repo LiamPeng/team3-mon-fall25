@@ -29,17 +29,16 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
     locations: initial.locations || [],
     priceMin: initial.priceMin ?? "",
     priceMax: initial.priceMax ?? "",
-    availableOnly: initial.availableOnly || false,
   });
 
   // Local state for immediate UI updates (not debounced)
   const [priceMinInput, setPriceMinInput] = useState(filters.priceMin);
   const [priceMaxInput, setPriceMaxInput] = useState(filters.priceMax);
-  
+
   // Validation errors state
   const [priceMinError, setPriceMinError] = useState("");
   const [priceMaxError, setPriceMaxError] = useState("");
-  
+
   const onChangeRef = useRef(onChange);
 
   useEffect(() => {
@@ -90,7 +89,7 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
     // Validate debounced values
     const minError = validatePriceMin(debouncedPriceMin);
     const maxError = validatePriceMax(debouncedPriceMax, debouncedPriceMin);
-    
+
     // Only update if validation passes
     if (!minError && !maxError) {
       setFilters((prev) => {
@@ -134,11 +133,11 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
   const handlePriceMinChange = (e) => {
     const value = e.target.value;
     setPriceMinInput(value);
-    
+
     // Real-time validation
     const error = validatePriceMin(value);
     setPriceMinError(error);
-    
+
     // Also validate max in case min changed affects max validation
     if (!error && priceMaxInput !== "" && priceMaxInput !== null && priceMaxInput !== undefined) {
       const maxError = validatePriceMax(priceMaxInput, value);
@@ -147,25 +146,19 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
       // Clear max error if min is now valid and max is empty
       setPriceMaxError("");
     }
-    
-    // Don't call onChange here - let debounce handle it
-  };
-  
-  const handlePriceMaxChange = (e) => {
-    const value = e.target.value;
-    setPriceMaxInput(value);
-    
-    // Real-time validation
-    const error = validatePriceMax(value, priceMinInput);
-    setPriceMaxError(error);
-    
+
     // Don't call onChange here - let debounce handle it
   };
 
-  const handleToggle = () => {
-    const newFilters = { ...filters, availableOnly: !filters.availableOnly };
-    setFilters(newFilters);
-    onChange?.(newFilters);
+  const handlePriceMaxChange = (e) => {
+    const value = e.target.value;
+    setPriceMaxInput(value);
+
+    // Real-time validation
+    const error = validatePriceMax(value, priceMinInput);
+    setPriceMaxError(error);
+
+    // Don't call onChange here - let debounce handle it
   };
 
   return (
@@ -185,25 +178,25 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
             <div style={{ color: "#6b7280", fontSize: 14 }}>Loading...</div>
           ) : (
             availableCategories.map((cat) => (
-            <label
-              key={cat}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "pointer",
-                fontSize: 15,
-                color: "#374151",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={filters.categories.includes(cat)}
-                onChange={() => handleCheckbox("categories", cat)}
-                style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
-              />
-              {cat}
-            </label>
+              <label
+                key={cat}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                  fontSize: 15,
+                  color: "#374151",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={filters.categories.includes(cat)}
+                  onChange={() => handleCheckbox("categories", cat)}
+                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+                />
+                {cat}
+              </label>
             ))
           )}
         </div>
@@ -219,25 +212,25 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
             <div style={{ color: "#6b7280", fontSize: 14 }}>Loading...</div>
           ) : (
             availableLocations.map((location) => (
-            <label
-              key={location}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "pointer",
-                fontSize: 15,
-                color: "#374151",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={filters.locations.includes(location)}
-                onChange={() => handleCheckbox("locations", location)}
-                style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
-              />
-              {location}
-            </label>
+              <label
+                key={location}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                  fontSize: 15,
+                  color: "#374151",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={filters.locations.includes(location)}
+                  onChange={() => handleCheckbox("locations", location)}
+                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+                />
+                {location}
+              </label>
             ))
           )}
         </div>
@@ -301,44 +294,6 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Available Only Toggle */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h4 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111" }}>
-            Available Only
-          </h4>
-          <label style={{ position: "relative", display: "inline-block", width: 50, height: 26, cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={filters.availableOnly}
-              onChange={handleToggle}
-              style={{ opacity: 0, width: 0, height: 0 }}
-            />
-            <span style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: filters.availableOnly ? "#56018D" : "#cbd5e1",
-              borderRadius: 26,
-              transition: "0.3s",
-            }}>
-              <span style={{
-                position: "absolute",
-                height: 20,
-                width: 20,
-                left: filters.availableOnly ? 26 : 3,
-                bottom: 3,
-                background: "#fff",
-                borderRadius: "50%",
-                transition: "0.3s",
-              }} />
-            </span>
-          </label>
         </div>
       </div>
     </div>

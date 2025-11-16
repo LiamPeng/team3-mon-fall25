@@ -36,12 +36,12 @@ const CreateListing = () => {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     setError("");
-    
+
     if (files.length > 10) {
       setError("Maximum 10 images allowed");
       return;
     }
-    
+
     // Validate file sizes
     const validation = validateImageFiles(files);
     if (!validation.valid) {
@@ -50,7 +50,7 @@ const CreateListing = () => {
       setImages([]);
       return;
     }
-    
+
     setImages(files);
   };
 

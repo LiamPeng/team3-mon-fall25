@@ -52,7 +52,6 @@ export default function BrowseListings() {
     dateRange: params.get("dateRange") ?? "",
     priceMin: params.get("min_price") ?? "",
     priceMax: params.get("max_price") ?? "",
-    availableOnly: params.get("availableOnly") === "1" ? true : false,
   };
 
   const [filters, setFilters] = useState(initialFiltersFromUrl);
@@ -93,7 +92,6 @@ export default function BrowseListings() {
     if (nextFilters.priceMin !== "" && nextFilters.priceMin != null) next.set("min_price", nextFilters.priceMin); else next.delete("min_price");
     if (nextFilters.priceMax !== "" && nextFilters.priceMax != null) next.set("max_price", nextFilters.priceMax); else next.delete("max_price");
     if (nextFilters.dateRange) next.set("dateRange", nextFilters.dateRange); else next.delete("dateRange");
-    if (nextFilters.availableOnly) next.set("availableOnly", "1"); else next.delete("availableOnly");
 
     setParams(next, { replace: false });
   };
@@ -119,7 +117,6 @@ export default function BrowseListings() {
       dateRange: params.get("dateRange") ?? "",
       priceMin: params.get("min_price") ?? "",
       priceMax: params.get("max_price") ?? "",
-      availableOnly: params.get("availableOnly") === "1",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.toString()]);
@@ -153,7 +150,6 @@ export default function BrowseListings() {
           const postedWithin = dateRangeToPostedWithin(filters.dateRange);
           if (postedWithin !== undefined) apiParams.posted_within = postedWithin;
         }
-        if (filters.availableOnly) apiParams.available_only = true;
 
         // Add extra filter fields if present (for extensibility)
         Object.keys(filters).forEach((key) => {
@@ -193,9 +189,9 @@ export default function BrowseListings() {
 
   // Handlers
   const handleSearch = (nextQ) => {
-  // Prevent whitespace-only search
-  if (nextQ && nextQ.trim().length === 0) return;
-  syncUrl(filters, { q: nextQ ?? "", page: 1 });
+    // Prevent whitespace-only search
+    if (nextQ && nextQ.trim().length === 0) return;
+    syncUrl(filters, { q: nextQ ?? "", page: 1 });
   };
 
   const handleSort = (nextSort) => {

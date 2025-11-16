@@ -61,9 +61,9 @@ describe('Filters', () => {
     render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
 
     const minInput = screen.getByLabelText('Min price');
-    
+
     fireEvent.change(minInput, { target: { value: '-10' } });
-    
+
     expect(screen.getByText('Minimum price must be 0 or greater')).toBeInTheDocument();
     // Check that the input has error border style applied
     // const minBorder = window.getComputedStyle(minInput).borderColor;
@@ -76,10 +76,10 @@ describe('Filters', () => {
 
     const minInput = screen.getByLabelText('Min price');
     const maxInput = screen.getByLabelText('Max price');
-    
+
     fireEvent.change(minInput, { target: { value: '100' } });
     fireEvent.change(maxInput, { target: { value: '50' } });
-    
+
     expect(screen.getByText('Maximum price must be greater than or equal to minimum price')).toBeInTheDocument();
     // Check that the input has error border style applied
     // const maxBorder = window.getComputedStyle(maxInput).borderColor;
@@ -92,10 +92,10 @@ describe('Filters', () => {
 
     const minInput = screen.getByLabelText('Min price');
     const maxInput = screen.getByLabelText('Max price');
-    
+
     fireEvent.change(minInput, { target: { value: '' } });
     fireEvent.change(maxInput, { target: { value: '' } });
-    
+
     expect(screen.queryByText(/must be/i)).not.toBeInTheDocument();
     // Check that borders have the normal color
     // expect(minBorder).toBe('rgb(229, 231, 235)'); // #e5e7eb in RGB
@@ -107,11 +107,11 @@ describe('Filters', () => {
     render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
 
     const minInput = screen.getByLabelText('Min price');
-    
+
     // Set invalid value
     fireEvent.change(minInput, { target: { value: '-10' } });
     expect(screen.getByText('Minimum price must be 0 or greater')).toBeInTheDocument();
-    
+
     // Fix the value
     fireEvent.change(minInput, { target: { value: '100' } });
     expect(screen.queryByText('Minimum price must be 0 or greater')).not.toBeInTheDocument();
