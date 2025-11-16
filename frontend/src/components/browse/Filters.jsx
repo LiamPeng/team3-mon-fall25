@@ -20,6 +20,9 @@ function useDebounce(value, delay) {
 }
 
 const PRICE_DEBOUNCE_DELAY = 300;
+const PRICE_MIN = 0;
+const PRICE_MAX = 2000;
+const PRICE_STEP = 10;
 
 export default function Filters({ initial = {}, onChange, options = {} }) {
   const { categories: availableCategories = [], locations: availableLocations = [] } = options;
@@ -35,6 +38,21 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
   // Local state for immediate UI updates (not debounced)
   const [priceMinInput, setPriceMinInput] = useState(filters.priceMin);
   const [priceMaxInput, setPriceMaxInput] = useState(filters.priceMax);
+
+  // Helper to get numeric value for slider (defaults to min/max if empty)
+  const getSliderValue = (value, isMin) => {
+    if (value === "" || value === null || value === undefined) {
+      return isMin ? PRICE_MIN : PRICE_MAX;
+    }
+    const num = Number(value);
+    if (isNaN(num)) {
+      return isMin ? PRICE_MIN : PRICE_MAX;
+    }
+    return Math.max(PRICE_MIN, Math.min(PRICE_MAX, num));
+  };
+
+  const minSliderValue = getSliderValue(priceMinInput, true);
+  const maxSliderValue = getSliderValue(priceMaxInput, false);
 
   // Validation errors state
   const [priceMinError, setPriceMinError] = useState("");
@@ -168,6 +186,16 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
     onChange?.(newFilters);
   };
 
+  const handleSliderMinChange = (e) => {
+    const newMin = Math.min(Number(e.target.value), maxSliderValue);
+    setPriceMinInput(String(newMin));
+  };
+
+  const handleSliderMaxChange = (e) => {
+    const newMax = Math.max(Number(e.target.value), minSliderValue);
+    setPriceMaxInput(String(newMax));
+  };
+
   return (
     <div style={{
       background: "#fff",
@@ -248,6 +276,115 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
         <h4 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#111" }}>
           Price Range
         </h4>
+
+        {/* Double Range Slider */}
+        <div style={{ marginBottom: 16, position: "relative", padding: "8px 0" }}>
+          <div style={{ position: "relative", height: 6, background: "#e5e7eb", borderRadius: 3, marginBottom: 8 }}>
+            {/* Active range track */}
+            <div
+              style={{
+                position: "absolute",
+                left: `${((minSliderValue - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100}%`,
+                width: `${((maxSliderValue - minSliderValue) / (PRICE_MAX - PRICE_MIN)) * 100}%`,
+                height: "100%",
+                background: "#56018D",
+                borderRadius: 3,
+              }}
+            />
+          </div>
+          <div style={{ position: "relative" }}>
+            <input
+              type="range"
+              min={PRICE_MIN}
+              max={PRICE_MAX}
+              step={PRICE_STEP}
+              value={minSliderValue}
+              onChange={handleSliderMinChange}
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: 6,
+                background: "transparent",
+                outline: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                pointerEvents: "auto",
+                zIndex: minSliderValue > maxSliderValue - PRICE_STEP ? 2 : 1,
+              }}
+              onInput={handleSliderMinChange}
+            />
+            <input
+              type="range"
+              min={PRICE_MIN}
+              max={PRICE_MAX}
+              step={PRICE_STEP}
+              value={maxSliderValue}
+              onChange={handleSliderMaxChange}
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: 6,
+                background: "transparent",
+                outline: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                pointerEvents: "auto",
+                zIndex: 2,
+              }}
+              onInput={handleSliderMaxChange}
+            />
+          </div>
+          <style>{`
+            input[type="range"]::-webkit-slider-thumb {
+              -webkit-appearance: none;
+              appearance: none;
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: #56018D;
+              cursor: pointer;
+              border: 2px solid #fff;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            input[type="range"]::-moz-range-thumb {
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: #56018D;
+              cursor: pointer;
+              border: 2px solid #fff;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            input[type="range"]::-webkit-slider-runnable-track {
+              height: 6px;
+              background: transparent;
+            }
+            input[type="range"]::-moz-range-track {
+              height: 6px;
+              background: transparent;
+            }
+            input[type="range"]:hover::-webkit-slider-thumb {
+              background: #6a1b9a;
+            }
+            input[type="range"]:hover::-moz-range-thumb {
+              background: #6a1b9a;
+            }
+          `}</style>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12,
+              color: "#6b7280",
+              marginTop: 4,
+            }}
+          >
+            <span>${minSliderValue}</span>
+            <span>${maxSliderValue}</span>
+          </div>
+        </div>
+
+        {/* Input Boxes */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <div>
             <label style={{ position: "absolute", left: "-9999px" }} htmlFor="price-min">
