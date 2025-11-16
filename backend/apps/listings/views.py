@@ -72,6 +72,7 @@ class ListingViewSet(
 
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    pagination_class = ListingPagination
 
     filter_backends = [
         DjangoFilterBackend,

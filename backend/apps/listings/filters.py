@@ -102,7 +102,8 @@ class ListingFilter(django_filters.FilterSet):
         category_list = [cat.strip() for cat in value.split(",") if cat.strip()]
 
         # Also check for multiple query params (Django's getlist)
-        if hasattr(self, "data"):
+        # Only works if self.data is a QueryDict (from request), not a dict (from tests)
+        if hasattr(self, "data") and hasattr(self.data, "getlist"):
             multi_cats = self.data.getlist("categories")
             if multi_cats and len(multi_cats) > 1:
                 # If multiple params, use them instead
@@ -132,7 +133,8 @@ class ListingFilter(django_filters.FilterSet):
         location_list = [loc.strip() for loc in value.split(",") if loc.strip()]
 
         # Also check for multiple query params
-        if hasattr(self, "data"):
+        # Only works if self.data is a QueryDict (from request), not a dict (from tests)
+        if hasattr(self, "data") and hasattr(self.data, "getlist"):
             multi_locs = self.data.getlist("locations")
             if multi_locs and len(multi_locs) > 1:
                 # If multiple params, use them instead

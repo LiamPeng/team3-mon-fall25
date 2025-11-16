@@ -381,7 +381,8 @@ class TestListingFilterCombined:
         )
         assert filterset.is_valid()
         results = list(filterset.qs)
-        assert len(results) == 3
+        # Laptop ($500) is excluded due to max_price, so only Textbook ($50) and Phone ($300) match
+        assert len(results) == 2
         for result in results:
             assert Decimal("40") <= result.price <= Decimal("400")
 
