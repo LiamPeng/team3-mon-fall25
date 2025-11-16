@@ -94,20 +94,28 @@ class ListingFilter(django_filters.FilterSet):
         Filter by multiple categories (OR logic).
         Accepts comma-separated string: categories=Electronics,Books
         Also supports multiple query params: categories=Electronics&categories=Books
+        Merges both formats if both are provided.
         """
         if not value:
             return queryset
 
-        # Parse comma-separated values
+        # Parse comma-separated values from the value parameter
         category_list = [cat.strip() for cat in value.split(",") if cat.strip()]
 
         # Also check for multiple query params (Django's getlist)
         # Only works if self.data is a QueryDict (from request), not a dict (from tests)
         if hasattr(self, "data") and hasattr(self.data, "getlist"):
             multi_cats = self.data.getlist("categories")
-            if multi_cats and len(multi_cats) > 1:
-                # If multiple params, use them instead
-                category_list = [cat.strip() for cat in multi_cats if cat.strip()]
+            if multi_cats:
+                # Merge: split each element if it contains commas, then combine
+                for cat_param in multi_cats:
+                    if cat_param:
+                        split_cats = [
+                            c.strip() for c in cat_param.split(",") if c.strip()
+                        ]
+                        category_list.extend(split_cats)
+                # Remove duplicates while preserving order
+                category_list = list(dict.fromkeys(category_list))
 
         if not category_list:
             return queryset
@@ -125,20 +133,28 @@ class ListingFilter(django_filters.FilterSet):
         Supports partial matching (icontains) for flexibility.
         Accepts comma-separated string: locations=Othmer Hall,Clark Hall
         Also supports multiple query params: locations=Othmer&locations=Clark
+        Merges both formats if both are provided.
         """
         if not value:
             return queryset
 
-        # Parse comma-separated values
+        # Parse comma-separated values from the value parameter
         location_list = [loc.strip() for loc in value.split(",") if loc.strip()]
 
         # Also check for multiple query params
         # Only works if self.data is a QueryDict (from request), not a dict (from tests)
         if hasattr(self, "data") and hasattr(self.data, "getlist"):
             multi_locs = self.data.getlist("locations")
-            if multi_locs and len(multi_locs) > 1:
-                # If multiple params, use them instead
-                location_list = [loc.strip() for loc in multi_locs if loc.strip()]
+            if multi_locs:
+                # Merge: split each element if it contains commas, then combine
+                for loc_param in multi_locs:
+                    if loc_param:
+                        split_locs = [
+                            loc.strip() for loc in loc_param.split(",") if loc.strip()
+                        ]
+                        location_list.extend(split_locs)
+                # Remove duplicates while preserving order
+                location_list = list(dict.fromkeys(location_list))
 
         if not location_list:
             return queryset
