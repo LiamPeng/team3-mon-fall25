@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getListing, updateListing } from "../api/listings";
+import { getListing, updateListing, getFilterOptions } from "../api/listings";
 import { formatFileSize, validateImageFiles } from "../utils/fileUtils";
-
-// Match these with the CreateListing component
-const CATEGORIES = ["Electronics", "Books", "Furniture", "Sports", "Clothing", "Other"];
-const DORMS = [
-  "Othmer Hall",
-  "Clark Hall",
-  "Rubin Hall",
-  "Weinstein Hall",
-  "Brittany Hall",
-  "Founders Hall",
-];
 
 const EditListing = () => {
   const { id } = useParams();
@@ -30,6 +19,23 @@ const EditListing = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [filterOptions, setFilterOptions] = useState({ categories: [], locations: [] });
+  const [optionsLoading, setOptionsLoading] = useState(true);
+
+  // Fetch filter options on mount
+  useEffect(() => {
+    async function loadFilterOptions() {
+      try {
+        const options = await getFilterOptions();
+        setFilterOptions(options);
+      } catch (e) {
+        console.error("Failed to load filter options:", e);
+      } finally {
+        setOptionsLoading(false);
+      }
+    }
+    loadFilterOptions();
+  }, []);
 
   // Fetch listing data
   useEffect(() => {
@@ -282,7 +288,7 @@ const EditListing = () => {
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              disabled={saving}
+              disabled={saving || optionsLoading}
               style={{
                 width: "100%",
                 padding: "12px 14px",
@@ -291,13 +297,13 @@ const EditListing = () => {
                 fontSize: 15,
                 outline: "none",
                 background: "#fff",
-                cursor: "pointer",
+                cursor: optionsLoading ? "wait" : "pointer",
               }}
               onFocus={(e) => (e.target.style.borderColor = "#56018D")}
               onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
             >
-              <option value="">Select a category</option>
-              {CATEGORIES.map((cat) => (
+              <option value="">{optionsLoading ? "Loading..." : "Select a category"}</option>
+              {filterOptions.categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -323,7 +329,7 @@ const EditListing = () => {
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              disabled={saving}
+              disabled={saving || optionsLoading}
               style={{
                 width: "100%",
                 padding: "12px 14px",
@@ -332,15 +338,15 @@ const EditListing = () => {
                 fontSize: 15,
                 outline: "none",
                 background: "#fff",
-                cursor: "pointer",
+                cursor: optionsLoading ? "wait" : "pointer",
               }}
               onFocus={(e) => (e.target.style.borderColor = "#56018D")}
               onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
             >
-              <option value="">Select your dorm</option>
-              {DORMS.map((dorm) => (
-                <option key={dorm} value={dorm}>
-                  {dorm}
+              <option value="">{optionsLoading ? "Loading..." : "Select your location"}</option>
+              {filterOptions.locations.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
                 </option>
               ))}
             </select>
