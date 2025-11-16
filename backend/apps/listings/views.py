@@ -306,6 +306,38 @@ class ListingViewSet(
         # Delete the listing (will cascade delete ListingImage records)
         instance.delete()
 
+    @action(detail=False, methods=["get"], url_path="filter-options")
+    def filter_options(self, request):
+        """
+        Get available filter options (categories and locations).
+        Returns distinct values from active listings, sorted alphabetically.
+
+        Endpoint: GET /api/v1/listings/filter-options/
+        Response: {"categories": [...], "locations": [...]}
+        """
+        # Get distinct categories (non-empty, sorted)
+        categories = (
+            Listing.objects.filter(status="active")
+            .exclude(Q(category__isnull=True) | Q(category=""))
+            .values_list("category", flat=True)
+            .distinct()
+            .order_by("category")
+        )
+
+        # Get distinct locations (non-empty, non-null, sorted)
+        locations = (
+            Listing.objects.filter(status="active")
+            .exclude(Q(location__isnull=True) | Q(location=""))
+            .values_list("location", flat=True)
+            .distinct()
+            .order_by("location")
+        )
+
+        return Response(
+            {"categories": list(categories), "locations": list(locations)},
+            status=status.HTTP_200_OK,
+        )
+
     @action(
         detail=True,
         methods=["post"],
