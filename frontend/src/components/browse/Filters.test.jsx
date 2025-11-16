@@ -1,15 +1,22 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import Filters from './Filters';
 
-describe('Filters', () => {
-  it('renders results count and category checkboxes, calls onChange when category toggled', () => {
-    const onChange = vi.fn();
-    render(<Filters initial={{}} onChange={onChange} />);
+const mockOptions = {
+  categories: ['Electronics', 'Books', 'Furniture', 'Apparel', 'Other'],
+  locations: ['Othmer Hall', 'Brooklyn', 'Manhattan', 'Other']
+};
 
-    // results count element
-    expect(screen.getByText(/results/i)).toBeInTheDocument();
+describe('Filters', () => {
+  it('renders category checkboxes, calls onChange when category toggled', async () => {
+    const onChange = vi.fn();
+    render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
+
+    // Wait for categories to render
+    await waitFor(() => {
+      expect(screen.getByLabelText('Electronics')).toBeInTheDocument();
+    });
 
     // category checkbox exists
     const electronics = screen.getByLabelText('Electronics');
@@ -25,7 +32,7 @@ describe('Filters', () => {
     const onChange = vi.fn();
 
     try {
-      render(<Filters initial={{}} onChange={onChange} />);
+      render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
 
       const minInput = screen.getByLabelText('Min price');
       const maxInput = screen.getByLabelText('Max price');
@@ -51,7 +58,7 @@ describe('Filters', () => {
 
   it('validates minimum price must be >= 0', () => {
     const onChange = vi.fn();
-    render(<Filters initial={{}} onChange={onChange} />);
+    render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
 
     const minInput = screen.getByLabelText('Min price');
     
@@ -65,7 +72,7 @@ describe('Filters', () => {
 
   it('validates maximum price must be >= minimum price', () => {
     const onChange = vi.fn();
-    render(<Filters initial={{}} onChange={onChange} />);
+    render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
 
     const minInput = screen.getByLabelText('Min price');
     const maxInput = screen.getByLabelText('Max price');
@@ -81,7 +88,7 @@ describe('Filters', () => {
 
   it('allows empty price fields', () => {
     const onChange = vi.fn();
-    render(<Filters initial={{}} onChange={onChange} />);
+    render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
 
     const minInput = screen.getByLabelText('Min price');
     const maxInput = screen.getByLabelText('Max price');
@@ -97,7 +104,7 @@ describe('Filters', () => {
 
   it('clears validation errors when values are corrected', () => {
     const onChange = vi.fn();
-    render(<Filters initial={{}} onChange={onChange} />);
+    render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
 
     const minInput = screen.getByLabelText('Min price');
     
@@ -110,9 +117,14 @@ describe('Filters', () => {
     expect(screen.queryByText('Minimum price must be 0 or greater')).not.toBeInTheDocument();
   });
 
-  it('toggles dorm checkbox and available-only toggle', () => {
+  it('toggles dorm checkbox and available-only toggle', async () => {
     const onChange = vi.fn();
-    const { container } = render(<Filters initial={{}} onChange={onChange} />);
+    const { container } = render(<Filters initial={{}} onChange={onChange} options={mockOptions} />);
+
+    // Wait for locations to render
+    await waitFor(() => {
+      expect(screen.getByLabelText('Othmer Hall')).toBeInTheDocument();
+    });
 
     // dorm checkbox
     const dormCheckbox = screen.getByLabelText('Othmer Hall');

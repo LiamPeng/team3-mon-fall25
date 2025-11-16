@@ -5,11 +5,25 @@ import BrowseListings from "./BrowseListings";
 import { vi, beforeEach } from "vitest";
 import * as listingsApi from "../api/listings";
 
-vi.mock("../api/listings");
+vi.mock("../api/listings", () => ({
+  getListings: vi.fn(),
+  getFilterOptions: vi.fn(),
+  getListing: vi.fn(),
+  createListing: vi.fn(),
+  updateListing: vi.fn(),
+  deleteListingAPI: vi.fn(),
+  getMyListings: vi.fn(),
+  patchListing: vi.fn(),
+}));
 
 describe("BrowseListings integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock getFilterOptions for all tests
+    vi.mocked(listingsApi.getFilterOptions).mockResolvedValue({
+      categories: ['Electronics', 'Books', 'Furniture', 'Apparel', 'Other'],
+      locations: ['Othmer Hall', 'Brooklyn', 'Manhattan', 'Other']
+    });
   });
 
   it("shows listings and allows searching", async () => {
@@ -106,14 +120,14 @@ describe("BrowseListings integration", () => {
     listingsApi.getListings.mockResolvedValue({ results: [], count: 0 });
 
     render(
-      <MemoryRouter initialEntries={["/browse?category=Electronics"]}>
+      <MemoryRouter initialEntries={["/browse?categories=Electronics"]}>
         <BrowseListings />
       </MemoryRouter>
     );
 
     await waitFor(() => {
       expect(listingsApi.getListings).toHaveBeenCalledWith(
-        expect.objectContaining({ category: "Electronics" })
+        expect.objectContaining({ categories: "Electronics" })
       );
     });
   });
@@ -122,14 +136,14 @@ describe("BrowseListings integration", () => {
     listingsApi.getListings.mockResolvedValue({ results: [], count: 0 });
 
     render(
-      <MemoryRouter initialEntries={["/browse?location=Brooklyn"]}>
+      <MemoryRouter initialEntries={["/browse?locations=Brooklyn"]}>
         <BrowseListings />
       </MemoryRouter>
     );
 
     await waitFor(() => {
       expect(listingsApi.getListings).toHaveBeenCalledWith(
-        expect.objectContaining({ location: "Brooklyn" })
+        expect.objectContaining({ locations: "Brooklyn" })
       );
     });
   });
