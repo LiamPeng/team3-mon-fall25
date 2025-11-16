@@ -29,6 +29,7 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
     locations: initial.locations || [],
     priceMin: initial.priceMin ?? "",
     priceMax: initial.priceMax ?? "",
+    dateRange: initial.dateRange || "",
   });
 
   // Local state for immediate UI updates (not debounced)
@@ -159,6 +160,12 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
     setPriceMaxError(error);
 
     // Don't call onChange here - let debounce handle it
+  };
+
+  const handleDateRangeChange = (value) => {
+    const newFilters = { ...filters, dateRange: value };
+    setFilters(newFilters);
+    onChange?.(newFilters);
   };
 
   return (
@@ -294,6 +301,95 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Date Posted */}
+      <div style={{ marginBottom: 32 }}>
+        <h4 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#111" }}>
+          Date Posted
+        </h4>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontSize: 15,
+              color: "#374151",
+            }}
+          >
+            <input
+              type="radio"
+              name="date-range"
+              value="24h"
+              checked={filters.dateRange === "24h"}
+              onChange={() => handleDateRangeChange("24h")}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+            />
+            Last 24 hours
+          </label>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontSize: 15,
+              color: "#374151",
+            }}
+          >
+            <input
+              type="radio"
+              name="date-range"
+              value="7d"
+              checked={filters.dateRange === "7d"}
+              onChange={() => handleDateRangeChange("7d")}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+            />
+            Last 7 days
+          </label>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontSize: 15,
+              color: "#374151",
+            }}
+          >
+            <input
+              type="radio"
+              name="date-range"
+              value="30d"
+              checked={filters.dateRange === "30d"}
+              onChange={() => handleDateRangeChange("30d")}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+            />
+            Last 30 days
+          </label>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontSize: 15,
+              color: "#374151",
+            }}
+          >
+            <input
+              type="radio"
+              name="date-range"
+              value=""
+              checked={filters.dateRange === ""}
+              onChange={() => handleDateRangeChange("")}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+            />
+            Any time
+          </label>
         </div>
       </div>
     </div>

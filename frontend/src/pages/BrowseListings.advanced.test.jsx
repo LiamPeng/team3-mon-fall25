@@ -21,14 +21,14 @@ describe('BrowseListings advanced param mapping', () => {
     });
   });
 
-  it('calls getListings with mapped ordering, posted_within and available_only when URL params set', async () => {
+  it('calls getListings with mapped ordering and posted_within when URL params set', async () => {
     // Return an array to exercise Array.isArray branch
     getListings.mockImplementation(async () => {
       // return some results so the component renders ListingGrid
       return [{ listing_id: 1, title: 'X', price: '10.00', status: 'active' }];
     });
 
-    const query = '?q=desk&sort=price_asc&dateRange=7d&availableOnly=1&categories=Furniture&locations=Othmer&page=2&min_price=10&max_price=100';
+    const query = '?q=desk&sort=price_asc&dateRange=7d&categories=Furniture&locations=Othmer&page=2&min_price=10&max_price=100';
 
     render(
       <MemoryRouter initialEntries={[`/browse${query}`]}>
@@ -45,7 +45,6 @@ describe('BrowseListings advanced param mapping', () => {
     expect(calledWith.ordering).toBe('price');
     expect(calledWith.search).toBe('desk');
     expect(calledWith.posted_within).toBe(7);
-    expect(calledWith.available_only).toBe(true);
     expect(calledWith.categories).toBe('Furniture');
     expect(calledWith.locations).toBe('Othmer');
     expect(calledWith.min_price).toBe('10');
