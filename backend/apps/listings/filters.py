@@ -15,7 +15,9 @@ class ListingFilter(django_filters.FilterSet):
     # method-based filters
     min_price = django_filters.NumberFilter(method="filter_min_price")
     max_price = django_filters.NumberFilter(method="filter_max_price")
-    location = django_filters.CharFilter(field_name="location", lookup_expr="icontains")
+    location = django_filters.CharFilter(
+        field_name="dorm_location", lookup_expr="icontains"
+    )
     category = django_filters.CharFilter(field_name="category", lookup_expr="iexact")
     posted_within = django_filters.NumberFilter(method="filter_posted_within")
 
@@ -162,6 +164,6 @@ class ListingFilter(django_filters.FilterSet):
         # Build OR query with Q objects (partial matching)
         q_objects = Q()
         for loc in location_list:
-            q_objects |= Q(location__icontains=loc)
+            q_objects |= Q(dorm_location__icontains=loc)
 
         return queryset.filter(q_objects)

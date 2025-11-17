@@ -89,7 +89,7 @@ class ListingViewSet(
     filterset_class = ListingFilter
     ordering_fields = ["created_at", "price", "title"]
     ordering = ["-created_at"]
-    search_fields = ["title", "description", "location"]
+    search_fields = ["title", "description", "dorm_location"]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -287,7 +287,7 @@ class ListingViewSet(
             qs = base_qs.filter(
                 Q(title__icontains=q)
                 | Q(description__icontains=q)
-                | Q(location__icontains=q)
+                | Q(dorm_location__icontains=q)
                 | Q(category__icontains=q)
             )
         else:
@@ -363,8 +363,8 @@ class ListingViewSet(
         # (non-empty, non-null, sorted)
         available_locations = set(
             Listing.objects.filter(status="active")
-            .exclude(Q(location__isnull=True) | Q(location=""))
-            .values_list("location", flat=True)
+            .exclude(Q(dorm_location__isnull=True) | Q(dorm_location=""))
+            .values_list("dorm_location", flat=True)
             .distinct()
         )
 

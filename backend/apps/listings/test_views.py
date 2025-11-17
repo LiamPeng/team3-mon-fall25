@@ -377,7 +377,9 @@ class TestListingViewSet:
             title="Lamp", description="Great desk lamp", category="Electronics"
         )
         # Matches by location
-        ListingFactory(title="Couch", description="Leather", location="West Desk Hall")
+        ListingFactory(
+            title="Couch", description="Leather", dorm_location="West Desk Hall"
+        )
         # Matches by category (the custom search action includes category)
         ListingFactory(
             title="Something", description="misc", category="Desk Accessories"

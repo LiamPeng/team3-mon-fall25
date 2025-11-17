@@ -37,7 +37,7 @@ class TestListingFilterCategories:
             description="Dell laptop",
             price=Decimal("500.00"),
             status="active",
-            location="Othmer Hall",
+            dorm_location="Othmer Hall",
         )
 
         self.books = Listing.objects.create(
@@ -47,7 +47,7 @@ class TestListingFilterCategories:
             description="Math book",
             price=Decimal("50.00"),
             status="active",
-            location="Clark Hall",
+            dorm_location="Clark Hall",
         )
 
         self.furniture = Listing.objects.create(
@@ -57,7 +57,7 @@ class TestListingFilterCategories:
             description="Study desk",
             price=Decimal("100.00"),
             status="active",
-            location="Rubin Hall",
+            dorm_location="Rubin Hall",
         )
 
         self.sports = Listing.objects.create(
@@ -67,7 +67,7 @@ class TestListingFilterCategories:
             description="Wilson basketball",
             price=Decimal("25.00"),
             status="active",
-            location="Weinstein Hall",
+            dorm_location="Weinstein Hall",
         )
 
     def test_filter_single_category_backward_compatibility(self):
@@ -213,7 +213,7 @@ class TestListingFilterLocations:
             description="Dell laptop",
             price=Decimal("500.00"),
             status="active",
-            location="Othmer Hall",
+            dorm_location="Othmer Hall",
         )
 
         self.listing2 = Listing.objects.create(
@@ -223,7 +223,7 @@ class TestListingFilterLocations:
             description="Math book",
             price=Decimal("50.00"),
             status="active",
-            location="Clark Hall",
+            dorm_location="Clark Hall",
         )
 
         self.listing3 = Listing.objects.create(
@@ -233,7 +233,7 @@ class TestListingFilterLocations:
             description="Study desk",
             price=Decimal("100.00"),
             status="active",
-            location="Rubin Hall",
+            dorm_location="Rubin Hall",
         )
 
         self.listing4 = Listing.objects.create(
@@ -243,7 +243,7 @@ class TestListingFilterLocations:
             description="Wilson basketball",
             price=Decimal("25.00"),
             status="active",
-            location="Weinstein Hall",
+            dorm_location="Weinstein Hall",
         )
 
         # Listing with null location
@@ -254,7 +254,7 @@ class TestListingFilterLocations:
             description="No location",
             price=Decimal("10.00"),
             status="active",
-            location=None,
+            dorm_location=None,
         )
 
     def test_filter_single_location_backward_compatibility(self):
@@ -274,9 +274,9 @@ class TestListingFilterLocations:
             queryset=Listing.objects.all(),
         )
         assert filterset.is_valid()
-        results = list(filterset.qs.order_by("location"))
+        results = list(filterset.qs.order_by("dorm_location"))
         assert len(results) == 2
-        locations = {r.location for r in results}
+        locations = {r.dorm_location for r in results}
         assert "Othmer Hall" in locations
         assert "Clark Hall" in locations
 
@@ -327,7 +327,7 @@ class TestListingFilterLocations:
         assert filterset.is_valid()
         results = list(filterset.qs)
         assert len(results) == 1
-        assert results[0].location == "Othmer Hall"
+        assert results[0].dorm_location == "Othmer Hall"
 
     def test_filter_locations_empty_string(self):
         """Test empty locations filter returns all."""
@@ -348,7 +348,7 @@ class TestListingFilterLocations:
         results = list(filterset.qs)
         assert len(results) == 1
         assert results[0].category == "Electronics"
-        assert results[0].location == "Othmer Hall"
+        assert results[0].dorm_location == "Othmer Hall"
 
     def test_filter_locations_none_value(self):
         """Test locations filter with None value returns all."""
@@ -410,7 +410,7 @@ class TestListingFilterCombined:
             description="Dell laptop",
             price=Decimal("500.00"),
             status="active",
-            location="Othmer Hall",
+            dorm_location="Othmer Hall",
         )
 
         Listing.objects.create(
@@ -420,7 +420,7 @@ class TestListingFilterCombined:
             description="Math book",
             price=Decimal("50.00"),
             status="active",
-            location="Othmer Hall",
+            dorm_location="Othmer Hall",
         )
 
         Listing.objects.create(
@@ -430,7 +430,7 @@ class TestListingFilterCombined:
             description="iPhone",
             price=Decimal("300.00"),
             status="active",
-            location="Clark Hall",
+            dorm_location="Clark Hall",
         )
 
     def test_filter_multiple_categories_and_locations(self):
@@ -444,7 +444,7 @@ class TestListingFilterCombined:
         # Should match Electronics OR Books, AND Othmer Hall
         assert len(results) == 2
         for result in results:
-            assert result.location == "Othmer Hall"
+            assert result.dorm_location == "Othmer Hall"
             assert result.category in ["Electronics", "Books"]
 
     def test_filter_with_price_range_and_multiple_filters(self):
@@ -488,7 +488,7 @@ class TestListingFilterPriceValidation:
             description="Test",
             price=Decimal("100.00"),
             status="active",
-            location="Othmer Hall",
+            dorm_location="Othmer Hall",
         )
 
     def test_filter_min_price_none_value(self):

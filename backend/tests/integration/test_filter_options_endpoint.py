@@ -35,7 +35,7 @@ class TestFilterOptionsEndpoint:
             description="Dell laptop",
             price=Decimal("500.00"),
             status="active",
-            location="Othmer Hall",
+            dorm_location="Othmer Hall",
         )
 
         Listing.objects.create(
@@ -45,7 +45,7 @@ class TestFilterOptionsEndpoint:
             description="Math book",
             price=Decimal("50.00"),
             status="active",
-            location="Clark Hall",
+            dorm_location="Clark Hall",
         )
 
         Listing.objects.create(
@@ -55,7 +55,7 @@ class TestFilterOptionsEndpoint:
             description="Study desk",
             price=Decimal("100.00"),
             status="active",
-            location="Rubin Hall",
+            dorm_location="Rubin Hall",
         )
 
         Listing.objects.create(
@@ -65,7 +65,7 @@ class TestFilterOptionsEndpoint:
             description="iPhone",
             price=Decimal("300.00"),
             status="active",
-            location="Weinstein Hall",
+            dorm_location="Weinstein Hall",
         )
 
         # Inactive listing (should not appear in filter options)
@@ -76,7 +76,7 @@ class TestFilterOptionsEndpoint:
             description="Wilson basketball",
             price=Decimal("25.00"),
             status="sold",
-            location="Founders Hall",
+            dorm_location="Founders Hall",
         )
 
         # Listing with null/empty values
@@ -87,7 +87,7 @@ class TestFilterOptionsEndpoint:
             description="Item without category",
             price=Decimal("10.00"),
             status="active",
-            location=None,
+            dorm_location=None,
         )
 
     def test_filter_options_endpoint_returns_200(self):
@@ -269,7 +269,7 @@ class TestMultipleCategoryLocationFiltering:
             description="Dell laptop",
             price=Decimal("500.00"),
             status="active",
-            location="Othmer Hall",
+            dorm_location="Othmer Hall",
         )
 
         Listing.objects.create(
@@ -279,7 +279,7 @@ class TestMultipleCategoryLocationFiltering:
             description="Math book",
             price=Decimal("50.00"),
             status="active",
-            location="Clark Hall",
+            dorm_location="Clark Hall",
         )
 
         Listing.objects.create(
@@ -289,7 +289,7 @@ class TestMultipleCategoryLocationFiltering:
             description="Study desk",
             price=Decimal("100.00"),
             status="active",
-            location="Rubin Hall",
+            dorm_location="Rubin Hall",
         )
 
         Listing.objects.create(
@@ -299,7 +299,7 @@ class TestMultipleCategoryLocationFiltering:
             description="iPhone",
             price=Decimal("300.00"),
             status="active",
-            location="Weinstein Hall",
+            dorm_location="Weinstein Hall",
         )
 
     def test_api_multiple_categories_comma_separated(self):

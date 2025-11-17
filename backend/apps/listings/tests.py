@@ -147,9 +147,9 @@ class TestListingFilters:
 
     def test_filter_by_location_icontains(self):
         """Test location filter is case-insensitive and partial match"""
-        ListingFactory(location="Brooklyn, NY")
-        ListingFactory(location="Manhattan")
-        ListingFactory(location="BROOKLYN")
+        ListingFactory(dorm_location="Brooklyn, NY")
+        ListingFactory(dorm_location="Manhattan")
+        ListingFactory(dorm_location="BROOKLYN")
         # Partial match case-insensitive
         resp = self.client.get("/api/v1/listings/", {"location": "brook"})
         assert resp.status_code == 200
@@ -257,9 +257,9 @@ class TestListingFilters:
         assert ids[0] == listing2.listing_id
 
     def test_combined_filters(self):
-        ListingFactory(category="Books", price=6, location="Manhattan")
-        ListingFactory(category="Books", price=25, location="Manhattan")
-        ListingFactory(category="Electronics", price=10, location="Manhattan")
+        ListingFactory(category="Books", price=6, dorm_location="Manhattan")
+        ListingFactory(category="Books", price=25, dorm_location="Manhattan")
+        ListingFactory(category="Electronics", price=10, dorm_location="Manhattan")
         resp = self.client.get(
             "/api/v1/listings/",
             {
