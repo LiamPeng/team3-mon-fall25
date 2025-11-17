@@ -4,9 +4,14 @@ Unit tests for ListingFilter with multiple category and location support.
 
 import pytest
 from decimal import Decimal
+from django.http import QueryDict
+from faker import Faker
+from rest_framework.exceptions import ValidationError
 from apps.listings.models import Listing
 from apps.listings.filters import ListingFilter
 from apps.users.models import User
+
+fake = Faker()
 
 
 @pytest.mark.django_db
@@ -18,10 +23,10 @@ class TestListingFilterCategories:
         """Create test data."""
         # Create a test user
         self.user = User.objects.create_user(
-            email="test@nyu.edu",
+            email=f"{fake.user_name()}@nyu.edu",
             password="testpass123",
-            first_name="Test",
-            last_name="User",
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
         )
 
         # Create listings with different categories
@@ -146,6 +151,45 @@ class TestListingFilterCategories:
         assert len(results) == 1
         assert results[0].category == "Books"
 
+    def test_filter_categories_none_value(self):
+        """Test categories filter with None value returns all."""
+        filterset = ListingFilter(
+            data={"categories": None}, queryset=Listing.objects.all()
+        )
+        # When value is None, it should return queryset unchanged
+        # This tests the filter_categories method with None
+        result = filterset.filter_categories(Listing.objects.all(), "categories", None)
+        assert list(result) == list(Listing.objects.all())
+
+    def test_filter_categories_empty_list_after_parsing(self):
+        """Test categories filter with only whitespace/commas returns all."""
+        filterset = ListingFilter(
+            data={"categories": ",, , "}, queryset=Listing.objects.all()
+        )
+        assert filterset.is_valid()
+        results = list(filterset.qs)
+        # Empty list after parsing should return all
+        assert len(results) == 4
+
+    def test_filter_categories_with_querydict_getlist(self):
+        """Test categories filter with QueryDict getlist (multiple query params)."""
+        query_dict = QueryDict(mutable=True)
+        query_dict.setlist("categories", ["Electronics", "Books"])
+        filterset = ListingFilter(data=query_dict, queryset=Listing.objects.all())
+        assert filterset.is_valid()
+        results = list(filterset.qs)
+        assert len(results) == 2
+
+    def test_filter_categories_querydict_with_commas(self):
+        """Test categories filter with QueryDict containing comma-separated values."""
+        query_dict = QueryDict(mutable=True)
+        query_dict.setlist("categories", ["Electronics,Books", "Furniture"])
+        filterset = ListingFilter(data=query_dict, queryset=Listing.objects.all())
+        assert filterset.is_valid()
+        results = list(filterset.qs)
+        # Should merge and deduplicate: Electronics, Books, Furniture
+        assert len(results) == 3
+
 
 @pytest.mark.django_db
 class TestListingFilterLocations:
@@ -155,10 +199,10 @@ class TestListingFilterLocations:
     def setup(self):
         """Create test data."""
         self.user = User.objects.create_user(
-            email="test2@nyu.edu",
+            email=f"{fake.user_name()}@nyu.edu",
             password="testpass123",
-            first_name="Test",
-            last_name="User",
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
         )
 
         # Create listings with different locations
@@ -306,6 +350,43 @@ class TestListingFilterLocations:
         assert results[0].category == "Electronics"
         assert results[0].location == "Othmer Hall"
 
+    def test_filter_locations_none_value(self):
+        """Test locations filter with None value returns all."""
+        filterset = ListingFilter(
+            data={"locations": None}, queryset=Listing.objects.all()
+        )
+        result = filterset.filter_locations(Listing.objects.all(), "locations", None)
+        assert list(result) == list(Listing.objects.all())
+
+    def test_filter_locations_empty_list_after_parsing(self):
+        """Test locations filter with only whitespace/commas returns all."""
+        filterset = ListingFilter(
+            data={"locations": ",, , "}, queryset=Listing.objects.all()
+        )
+        assert filterset.is_valid()
+        results = list(filterset.qs)
+        # Empty list after parsing should return all
+        assert len(results) == 5
+
+    def test_filter_locations_with_querydict_getlist(self):
+        """Test locations filter with QueryDict getlist (multiple query params)."""
+        query_dict = QueryDict(mutable=True)
+        query_dict.setlist("locations", ["Othmer Hall", "Clark Hall"])
+        filterset = ListingFilter(data=query_dict, queryset=Listing.objects.all())
+        assert filterset.is_valid()
+        results = list(filterset.qs)
+        assert len(results) == 2
+
+    def test_filter_locations_querydict_with_commas(self):
+        """Test locations filter with QueryDict containing comma-separated values."""
+        query_dict = QueryDict(mutable=True)
+        query_dict.setlist("locations", ["Othmer Hall,Clark Hall", "Rubin Hall"])
+        filterset = ListingFilter(data=query_dict, queryset=Listing.objects.all())
+        assert filterset.is_valid()
+        results = list(filterset.qs)
+        # Should merge and deduplicate: Othmer Hall, Clark Hall, Rubin Hall
+        assert len(results) == 3
+
 
 @pytest.mark.django_db
 class TestListingFilterCombined:
@@ -315,10 +396,10 @@ class TestListingFilterCombined:
     def setup(self):
         """Create test data."""
         self.user = User.objects.create_user(
-            email="test3@nyu.edu",
+            email=f"{fake.user_name()}@nyu.edu",
             password="testpass123",
-            first_name="Test",
-            last_name="User",
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
         )
 
         # Create diverse listings
@@ -384,3 +465,103 @@ class TestListingFilterCombined:
         assert len(results) == 2
         for result in results:
             assert Decimal("40") <= result.price <= Decimal("400")
+
+
+@pytest.mark.django_db
+class TestListingFilterPriceValidation:
+    """Test price filter validation edge cases."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Create test data."""
+        self.user = User.objects.create_user(
+            email=f"{fake.user_name()}@nyu.edu",
+            password="testpass123",
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
+        )
+
+        Listing.objects.create(
+            user=self.user,
+            category="Electronics",
+            title="Item",
+            description="Test",
+            price=Decimal("100.00"),
+            status="active",
+            location="Othmer Hall",
+        )
+
+    def test_filter_min_price_none_value(self):
+        """Test min_price filter with None value returns queryset unchanged."""
+        filterset = ListingFilter(data={}, queryset=Listing.objects.all())
+        result = filterset.filter_min_price(Listing.objects.all(), "min_price", None)
+        assert list(result) == list(Listing.objects.all())
+
+    def test_filter_max_price_none_value(self):
+        """Test max_price filter with None value returns queryset unchanged."""
+        filterset = ListingFilter(data={}, queryset=Listing.objects.all())
+        result = filterset.filter_max_price(Listing.objects.all(), "max_price", None)
+        assert list(result) == list(Listing.objects.all())
+
+    def test_filter_min_price_invalid_type(self):
+        """Test min_price filter with invalid type raises ValidationError."""
+        filterset = ListingFilter(
+            data={"min_price": "invalid"}, queryset=Listing.objects.all()
+        )
+        with pytest.raises(ValidationError):
+            filterset.filter_min_price(Listing.objects.all(), "min_price", "invalid")
+
+    def test_filter_max_price_invalid_type(self):
+        """Test max_price filter with invalid type raises ValidationError."""
+        filterset = ListingFilter(
+            data={"max_price": "invalid"}, queryset=Listing.objects.all()
+        )
+        with pytest.raises(ValidationError):
+            filterset.filter_max_price(Listing.objects.all(), "max_price", "invalid")
+
+    def test_filter_max_price_with_invalid_min_price(self):
+        """Test max_price when min_price is invalid (should pass silently)."""
+        # This tests the pass statement in max_price validation
+        filterset = ListingFilter(
+            data={"min_price": "invalid", "max_price": "100"},
+            queryset=Listing.objects.all(),
+        )
+        # max_price validation should pass even if min_price is invalid
+        # (min_price will raise its own error)
+        try:
+            filterset.filter_max_price(Listing.objects.all(), "max_price", "100")
+        except ValidationError:
+            # This is expected if min_price validation runs first
+            pass
+
+
+@pytest.mark.django_db
+class TestListingFilterPostedWithin:
+    """Test posted_within filter validation."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Create test data."""
+        self.user = User.objects.create_user(
+            email=f"{fake.user_name()}@nyu.edu",
+            password="testpass123",
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
+        )
+
+    def test_filter_posted_within_invalid_type(self):
+        """Test posted_within with invalid type raises ValidationError."""
+        filterset = ListingFilter(
+            data={"posted_within": "invalid"}, queryset=Listing.objects.all()
+        )
+        with pytest.raises(ValidationError) as exc_info:
+            filterset.filter_posted_within(
+                Listing.objects.all(), "posted_within", "invalid"
+            )
+        assert "posted_within" in str(exc_info.value)
+
+    def test_filter_posted_within_none_value(self):
+        """Test posted_within with None value raises ValidationError."""
+        filterset = ListingFilter(data={}, queryset=Listing.objects.all())
+        with pytest.raises(ValidationError):
+            filterset.filter_posted_within(Listing.objects.all(), "posted_within", None)

@@ -127,6 +127,7 @@ class ListingViewSet(
 
         - list / retrieve / search: public (no auth required)
         - user_listings: must be authenticated
+        - contact_seller: must be authenticated (handled by @action decorator)
         - everything else: default (create/update/delete protected)
         """
         # Public read-only endpoints
@@ -137,7 +138,12 @@ class ListingViewSet(
         if self.action == "user_listings":
             return [IsAuthenticated()]
 
-        # Default: respect view’s base permissions
+        # contact_seller uses IsAuthenticated from @action decorator
+        # Don't apply IsOwnerOrReadOnly for this action
+        if self.action == "contact_seller":
+            return [IsAuthenticated()]
+
+        # Default: respect view's base permissions
         # (create/update/destroy + other actions)
         return [IsAuthenticatedOrReadOnly(), IsOwnerOrReadOnly()]
 
