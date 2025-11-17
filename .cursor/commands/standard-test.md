@@ -1,0 +1,1 @@
+Reference to Travis CI `.travis.yml` file, do all the tests in script section to ensure the codebase will be deployable.
