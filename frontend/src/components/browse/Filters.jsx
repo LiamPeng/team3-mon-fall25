@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import RangeSlider from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
-import { CATEGORIES, LOCATIONS } from "../../constants/filterOptions";
+import { CATEGORIES, LOCATIONS, DORM_LOCATIONS_GROUPED } from "../../constants/filterOptions";
 
 // Component for grouped dorm locations with collapsible sections
 function DormLocationGroups({ dormLocations, selectedLocations, onToggle }) {
@@ -136,9 +136,8 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
   } = options;
 
   const availableCategories = apiCategories.length > 0 ? apiCategories : CATEGORIES;
-  // Currently using flat locations array for checkbox selection
-  // TODO: Future enhancement - use grouped dorm_locations structure to display locations
-  // grouped by area (Washington Square, Downtown, Other) with section headers in the UI
+  // Use grouped dorm_locations if available, otherwise fallback to grouped structure
+  const dormLocationsForDisplay = apiDormLocations || DORM_LOCATIONS_GROUPED;
   const availableLocations = apiLocations.length > 0 ? apiLocations : LOCATIONS;
 
   const [filters, setFilters] = useState({
@@ -353,9 +352,9 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
         <h4 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#111" }}>
           Location
         </h4>
-        {apiDormLocations ? (
+        {dormLocationsForDisplay ? (
           <DormLocationGroups
-            dormLocations={apiDormLocations}
+            dormLocations={dormLocationsForDisplay}
             selectedLocations={filters.locations}
             onToggle={handleCheckbox}
           />

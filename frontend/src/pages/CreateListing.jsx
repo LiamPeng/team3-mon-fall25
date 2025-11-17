@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createListing, getFilterOptions } from "../api/listings";
 import SEO from "../components/SEO";
 import { formatFileSize, validateImageFiles } from "../utils/fileUtils";
-import { CATEGORIES, LOCATIONS } from "../constants/filterOptions";
+import { CATEGORIES, LOCATIONS, DORM_LOCATIONS_GROUPED } from "../constants/filterOptions";
 
 const CreateListing = () => {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ const CreateListing = () => {
   const [filterOptions, setFilterOptions] = useState({
     categories: CATEGORIES,
     locations: LOCATIONS,
-    dorm_locations: null, // Grouped structure for dropdown
+    dorm_locations: DORM_LOCATIONS_GROUPED, // Grouped structure for dropdown
   });
 
   // Fetch filter options from API on mount
@@ -33,15 +33,15 @@ const CreateListing = () => {
         setFilterOptions({
           categories: apiOptions.categories || CATEGORIES,
           locations: flatLocations.length > 0 ? flatLocations : LOCATIONS,
-          dorm_locations: apiOptions.dorm_locations || null, // Keep grouped structure
+          dorm_locations: apiOptions.dorm_locations || DORM_LOCATIONS_GROUPED, // Use API or fallback to grouped
         });
       } catch (e) {
         console.error("Error loading filter options:", e);
-        // Fallback to hardcoded values on error
+        // Fallback to hardcoded values on error (grouped structure)
         setFilterOptions({
           categories: CATEGORIES,
           locations: LOCATIONS,
-          dorm_locations: null,
+          dorm_locations: DORM_LOCATIONS_GROUPED,
         });
       }
     }

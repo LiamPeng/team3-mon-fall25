@@ -10,7 +10,7 @@ import Empty from "../components/common/Empty";
 import ErrorBlock from "../components/common/ErrorBlock";
 import { getListings, getFilterOptions } from "../api/listings";
 import SEO from "../components/SEO";
-import { CATEGORIES, LOCATIONS } from "../constants/filterOptions";
+import { CATEGORIES, LOCATIONS, DORM_LOCATIONS_GROUPED } from "../constants/filterOptions";
 
 const PAGE_SIZE = 20; // should match backend pagination
 
@@ -60,7 +60,7 @@ export default function BrowseListings() {
   const [filterOptions, setFilterOptions] = useState({
     categories: CATEGORIES,
     locations: LOCATIONS,
-    dorm_locations: null, // Grouped structure for future UI enhancement
+    dorm_locations: DORM_LOCATIONS_GROUPED, // Grouped structure for UI
   });
   // const [filterOptionsLoading, setFilterOptionsLoading] = useState(false); // Commented out - uncomment if loading state needed
   const [data, setData] = useState(null);
@@ -116,15 +116,15 @@ export default function BrowseListings() {
         setFilterOptions({
           categories: apiOptions.categories || CATEGORIES,
           locations: flatLocations.length > 0 ? flatLocations : LOCATIONS,
-          dorm_locations: apiOptions.dorm_locations || null, // Keep grouped structure for future use
+          dorm_locations: apiOptions.dorm_locations || DORM_LOCATIONS_GROUPED, // Use API or fallback to grouped
         });
       } catch (e) {
         console.error("Error loading filter options:", e);
-        // Fallback to hardcoded values on error
+        // Fallback to hardcoded values on error (grouped structure)
         setFilterOptions({
           categories: CATEGORIES,
           locations: LOCATIONS,
-          dorm_locations: null,
+          dorm_locations: DORM_LOCATIONS_GROUPED,
         });
       } finally {
         // setFilterOptionsLoading(false); // Commented out - uncomment if loading state needed

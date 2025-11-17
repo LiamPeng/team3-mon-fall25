@@ -37,9 +37,19 @@ const DOWNTOWN = [
     "Water Street",
 ];
 
+const OTHER = ["Other Dorms", "Off-Campus"];
+
 // Flattened list for use in components (alphabetized within each area)
 export const LOCATIONS = [
     ...WASHINGTON_SQUARE,
     ...DOWNTOWN,
+    ...OTHER,
 ];
+
+// Grouped structure for dorm locations (matches backend structure)
+export const DORM_LOCATIONS_GROUPED = {
+    washington_square: WASHINGTON_SQUARE,
+    downtown: DOWNTOWN,
+    other: OTHER,
+};
 
