@@ -3,6 +3,38 @@ import RangeSlider from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
 import { CATEGORIES, LOCATIONS, DORM_LOCATIONS_GROUPED } from "../../constants/filterOptions";
 
+// Checkbox component that supports indeterminate state
+function SelectAllCheckbox({ checked, indeterminate, onChange }) {
+  const checkboxRef = useRef(null);
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        cursor: "pointer",
+        marginRight: 8,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <input
+        ref={checkboxRef}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+      />
+    </label>
+  );
+}
+
 // Component for grouped dorm locations with collapsible sections
 function DormLocationGroups({ dormLocations, selectedLocations, onToggle }) {
   const [expandedGroups, setExpandedGroups] = useState({
@@ -24,6 +56,37 @@ function DormLocationGroups({ dormLocations, selectedLocations, onToggle }) {
     other: "Other",
   };
 
+  // Check if all locations in a group are selected
+  const areAllSelected = (locations) => {
+    return locations.every((loc) => selectedLocations.includes(loc));
+  };
+
+  // Check if some (but not all) locations in a group are selected
+  const areSomeSelected = (locations) => {
+    const selectedCount = locations.filter((loc) => selectedLocations.includes(loc)).length;
+    return selectedCount > 0 && selectedCount < locations.length;
+  };
+
+  // Toggle all locations in a group
+  const toggleGroupSelection = (locations, groupName, e) => {
+    e.stopPropagation(); // Prevent collapsing/expanding when clicking checkbox
+    const allSelected = areAllSelected(locations);
+
+    // Calculate new locations array: add all if not all selected, remove all if all selected
+    let newLocations;
+    if (allSelected) {
+      // Deselect all locations in this group
+      newLocations = selectedLocations.filter((loc) => !locations.includes(loc));
+    } else {
+      // Select all locations in this group (add missing ones)
+      const locationsToAdd = locations.filter((loc) => !selectedLocations.includes(loc));
+      newLocations = [...selectedLocations, ...locationsToAdd];
+    }
+
+    // Update all at once by calling onToggle with the new array (batch update)
+    onToggle("locations", newLocations);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {Object.entries(dormLocations).map(([groupName, locations]) => {
@@ -31,36 +94,54 @@ function DormLocationGroups({ dormLocations, selectedLocations, onToggle }) {
 
         const isExpanded = expandedGroups[groupName];
         const groupLabel = groupLabels[groupName] || groupName;
+        const allSelected = areAllSelected(locations);
+        const someSelected = areSomeSelected(locations);
 
         return (
           <div key={groupName} style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            {/* Group Header - Collapsible */}
-            <button
-              type="button"
-              onClick={() => toggleGroup(groupName)}
+            {/* Group Header - Collapsible with Select All */}
+            <div
               style={{
-                width: "100%",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px 12px",
                 background: "#f9fafb",
-                border: "none",
                 borderTopLeftRadius: 8,
                 borderTopRightRadius: 8,
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 600,
-                color: "#374151",
+                padding: "10px 12px",
               }}
-              onMouseOver={(e) => (e.target.style.background = "#f3f4f6")}
-              onMouseOut={(e) => (e.target.style.background = "#f9fafb")}
             >
-              <span>{groupLabel}</span>
-              <span style={{ fontSize: 12, color: "#6b7280" }}>
-                {isExpanded ? "▼" : "▶"}
-              </span>
-            </button>
+              {/* Select All Checkbox */}
+              <SelectAllCheckbox
+                checked={allSelected}
+                indeterminate={someSelected}
+                onChange={(e) => toggleGroupSelection(locations, groupName, e)}
+              />
+              {/* Collapse/Expand Button */}
+              <button
+                type="button"
+                onClick={() => toggleGroup(groupName)}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#374151",
+                  padding: 0,
+                }}
+                onMouseOver={(e) => (e.target.style.opacity = "0.8")}
+                onMouseOut={(e) => (e.target.style.opacity = "1")}
+              >
+                <span>{groupLabel}</span>
+                <span style={{ fontSize: 12, color: "#6b7280" }}>
+                  {isExpanded ? "▼" : "▶"}
+                </span>
+              </button>
+            </div>
 
             {/* Group Content - Collapsible */}
             {isExpanded && (
@@ -252,10 +333,19 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
   }, [initial.priceMin, initial.priceMax]);
 
   const handleCheckbox = (type, value) => {
+    // Support both single value toggle and batch array update
     const current = filters[type] || [];
-    const updated = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value];
+    let updated;
+
+    if (Array.isArray(value)) {
+      // Batch update: value is the new array
+      updated = value;
+    } else {
+      // Single toggle: add or remove the value
+      updated = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+    }
 
     const newFilters = { ...filters, [type]: updated };
     setFilters(newFilters);
