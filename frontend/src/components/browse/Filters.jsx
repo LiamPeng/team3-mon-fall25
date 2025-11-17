@@ -3,6 +3,98 @@ import RangeSlider from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
 import { CATEGORIES, LOCATIONS } from "../../constants/filterOptions";
 
+// Component for grouped dorm locations with collapsible sections
+function DormLocationGroups({ dormLocations, selectedLocations, onToggle }) {
+  const [expandedGroups, setExpandedGroups] = useState({
+    washington_square: true,
+    downtown: true,
+    other: true,
+  });
+
+  const toggleGroup = (groupName) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupName]: !prev[groupName],
+    }));
+  };
+
+  const groupLabels = {
+    washington_square: "Washington Square",
+    downtown: "Downtown",
+    other: "Other",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {Object.entries(dormLocations).map(([groupName, locations]) => {
+        if (!locations || locations.length === 0) return null;
+
+        const isExpanded = expandedGroups[groupName];
+        const groupLabel = groupLabels[groupName] || groupName;
+
+        return (
+          <div key={groupName} style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
+            {/* Group Header - Collapsible */}
+            <button
+              type="button"
+              onClick={() => toggleGroup(groupName)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 12px",
+                background: "#f9fafb",
+                border: "none",
+                borderTopLeftRadius: 8,
+                borderTopRightRadius: 8,
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#374151",
+              }}
+              onMouseOver={(e) => (e.target.style.background = "#f3f4f6")}
+              onMouseOut={(e) => (e.target.style.background = "#f9fafb")}
+            >
+              <span>{groupLabel}</span>
+              <span style={{ fontSize: 12, color: "#6b7280" }}>
+                {isExpanded ? "▼" : "▶"}
+              </span>
+            </button>
+
+            {/* Group Content - Collapsible */}
+            {isExpanded && (
+              <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                {locations.map((location) => (
+                  <label
+                    key={location}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      cursor: "pointer",
+                      fontSize: 15,
+                      color: "#374151",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedLocations.includes(location)}
+                      onChange={() => onToggle("locations", location)}
+                      style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+                    />
+                    {location}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Custom hook for debouncing values
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -256,38 +348,47 @@ export default function Filters({ initial = {}, onChange, options = {} }) {
         </div>
       </div>
 
-      {/* Location Filter */}
+      {/* Location Filter - Grouped with collapsible sections */}
       <div style={{ marginBottom: 32 }}>
         <h4 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#111" }}>
           Location
         </h4>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {availableLocations.length === 0 ? (
-            <div style={{ color: "#6b7280", fontSize: 14 }}>Loading...</div>
-          ) : (
-            availableLocations.map((location) => (
-              <label
-                key={location}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  cursor: "pointer",
-                  fontSize: 15,
-                  color: "#374151",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={filters.locations.includes(location)}
-                  onChange={() => handleCheckbox("locations", location)}
-                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
-                />
-                {location}
-              </label>
-            ))
-          )}
-        </div>
+        {apiDormLocations ? (
+          <DormLocationGroups
+            dormLocations={apiDormLocations}
+            selectedLocations={filters.locations}
+            onToggle={handleCheckbox}
+          />
+        ) : (
+          // Fallback to flat list if grouped structure not available
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {availableLocations.length === 0 ? (
+              <div style={{ color: "#6b7280", fontSize: 14 }}>Loading...</div>
+            ) : (
+              availableLocations.map((location) => (
+                <label
+                  key={location}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    fontSize: 15,
+                    color: "#374151",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={filters.locations.includes(location)}
+                    onChange={() => handleCheckbox("locations", location)}
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#56018D" }}
+                  />
+                  {location}
+                </label>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Price Range */}
