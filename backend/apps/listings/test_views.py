@@ -762,7 +762,7 @@ class TestListingViewSetAdditional:
         """Test perform_destroy continues even if S3 delete fails."""
         client, user = authenticated_client
         listing = ListingFactory(user=user)
-        image = ListingImageFactory(listing=listing)
+        ListingImageFactory(listing=listing)
 
         with patch("utils.s3_service.s3_service.delete_image") as mock_delete, patch(
             "apps.listings.views.logger"
@@ -780,7 +780,7 @@ class TestListingViewSetAdditional:
         """Test perform_destroy handles S3 exceptions gracefully."""
         client, user = authenticated_client
         listing = ListingFactory(user=user)
-        image = ListingImageFactory(listing=listing)
+        ListingImageFactory(listing=listing)
 
         with patch("utils.s3_service.s3_service.delete_image") as mock_delete, patch(
             "apps.listings.views.logger"
@@ -800,9 +800,7 @@ class TestListingViewSetAdditional:
 
         # Test that retrieve handles exceptions in the try-except block
         # by patching cache.get to raise an exception
-        with patch("apps.listings.views.cache.get") as mock_cache_get, patch(
-            "apps.listings.views.cache.set"
-        ) as mock_cache_set:
+        with patch("apps.listings.views.cache.get") as mock_cache_get:
             # Simulate an exception during cache operations
             mock_cache_get.side_effect = Exception("Cache error")
 
@@ -825,7 +823,8 @@ class TestListingViewSetAdditional:
         assert serializer_class == CompactListingSerializer
 
     def test_get_serializer_class_for_user_listings_action(self, authenticated_client):
-        """Test get_serializer_class returns CompactListingSerializer for user_listings."""
+        """Test get_serializer_class returns CompactListingSerializer
+        for user_listings."""
         from apps.listings.views import ListingViewSet
         from apps.listings.serializers import CompactListingSerializer
 
@@ -853,12 +852,8 @@ class TestListingViewSetAdditional:
         """Test perform_destroy counts successful S3 deletions."""
         client, user = authenticated_client
         listing = ListingFactory(user=user)
-        image1 = ListingImageFactory(
-            listing=listing, image_url="http://example.com/img1.jpg"
-        )
-        image2 = ListingImageFactory(
-            listing=listing, image_url="http://example.com/img2.jpg"
-        )
+        ListingImageFactory(listing=listing, image_url="http://example.com/img1.jpg")
+        ListingImageFactory(listing=listing, image_url="http://example.com/img2.jpg")
 
         with patch("utils.s3_service.s3_service.delete_image") as mock_delete, patch(
             "apps.listings.views.logger"

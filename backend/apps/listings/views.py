@@ -313,7 +313,8 @@ class ListingViewSet(
         # Delete the listing (will cascade delete ListingImage records)
         instance.delete()
 
-    # Not connect to frontend because it only returns options that are actually in active listings
+    # Not connect to frontend because it only returns options that are
+    # actually in active listings
     @action(detail=False, methods=["get"], url_path="filter-options")
     def filter_options(self, request):
         """
