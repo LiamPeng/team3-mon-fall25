@@ -89,7 +89,11 @@ class ListingViewSet(
     filterset_class = ListingFilter
     ordering_fields = ["created_at", "price", "title"]
     ordering = ["-created_at"]
-    search_fields = ["title", "description", "location", "dorm_location", "category"]
+
+    # TODO: add location to search_fields when we implement geographical location
+    # via Google Maps API
+    # search_fields = ["title", "description", "location", "dorm_location", "category"]
+    search_fields = ["title", "description", "dorm_location", "category"]
 
     def get_queryset(self):
         queryset = super().get_queryset()
