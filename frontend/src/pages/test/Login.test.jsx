@@ -62,7 +62,7 @@ describe('Login page', () => {
       data: {
         access_token: 'access',
         refresh_token: 'refresh',
-        user: { id: 1, email: 'user@nyu.edu' },
+        user: { id: 1, email: 'user@nyu.edu', profile_complete: true },
       },
     });
 
@@ -78,9 +78,9 @@ describe('Login page', () => {
       expect(mockLoginFn).toHaveBeenCalledWith(
         'access',
         'refresh',
-        { id: 1, email: 'user@nyu.edu' }
+        { id: 1, email: 'user@nyu.edu', profile_complete: true }
       );
-      expect(mockNavigate).toHaveBeenCalledWith('/');
+      expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
     });
   });
 
@@ -270,7 +270,7 @@ describe('Login page', () => {
       data: {
         access_token: 'access',
         refresh_token: 'refresh',
-        user: { id: 1, email: 'new@nyu.edu' },
+        user: { id: 1, email: 'new@nyu.edu', profile_complete: true },
         is_new_user: true,
       },
     });
@@ -283,7 +283,7 @@ describe('Login page', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         'Welcome! Your account has been created.'
       );
-      expect(mockNavigate).toHaveBeenCalledWith('/');
+      expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
     });
 
     consoleSpy.mockRestore();
@@ -308,7 +308,7 @@ describe('Login page', () => {
       data: {
         access_token: 'access',
         refresh_token: 'refresh',
-        user: { id: 1, email: 'user@nyu.edu' },
+        user: { id: 1, email: 'user@nyu.edu', profile_complete: true },
       },
     });
 
@@ -335,7 +335,7 @@ describe('Login page', () => {
     apiClient.post.mockRejectedValueOnce({
       response: {
         status: 500,
-        data: {}, // 這樣 data?.error 和 data?.email?.[0] 都是 undefined
+        data: {}, // Keep empty so both data?.error and data?.email?.[0] are undefined
       },
     });
 

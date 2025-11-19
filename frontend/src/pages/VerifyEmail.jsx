@@ -5,6 +5,9 @@ import { useAuth } from "../contexts/AuthContext";
 import apiClient from "../api/client";
 import { endpoints } from "../api/endpoints";
 import "./VerifyEmail.css";
+import { ROUTES } from "../constants/routes";
+import { redirectAfterAuth } from "../utils/postAuthRedirect";
+import { getLastAuthEmail, setLastAuthEmail } from "../utils/authEmailStorage";
 
 const OTP_LENGTH = 6;
 
@@ -13,8 +16,8 @@ export default function VerifyEmail() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Login 頁 navigate("/verify-email", { state: { email } })
-  const email = location.state?.email || "";
+  const locationEmail = location.state?.email;
+  const email = locationEmail || getLastAuthEmail();
 
   const [otpValues, setOtpValues] = useState(Array(OTP_LENGTH).fill(""));
   const [error, setError] = useState("");
@@ -24,12 +27,14 @@ export default function VerifyEmail() {
 
   const inputsRef = useRef([]);
 
-  // 如果沒有 email（例如直接打網址 /refresh），就送回 login
   useEffect(() => {
-    if (!email) {
-      navigate("/login", { replace: true });
+    if (locationEmail) {
+      setLastAuthEmail(locationEmail);
     }
-  }, [email, navigate]);
+    if (!email) {
+      navigate(ROUTES.LOGIN, { replace: true });
+    }
+  }, [email, locationEmail, navigate]);
 
   const handleChange = (index, value) => {
     const numericValue = value.replace(/\D/g, "");
@@ -101,15 +106,17 @@ export default function VerifyEmail() {
         otp: code,
       });
 
-      // 後端回：access_token, refresh_token, user
+      // Backend returns tokens + user payload
       login(
         response.data.access_token,
         response.data.refresh_token,
         response.data.user
       );
 
-      // 驗證成功 → 回到首頁（或你想要的頁面）
-      navigate("/", { replace: true });
+      // Verification success → send user through completion redirect
+      await redirectAfterAuth(navigate, response.data?.user, ROUTES.COMPLETE_PROFILE, {
+        forceCompletePage: true,
+      });
     } catch (err) {
       const data = err.response?.data;
       setError(
@@ -153,7 +160,7 @@ export default function VerifyEmail() {
   };
 
   const handleBackToLogin = () => {
-    navigate("/login");
+    navigate(ROUTES.LOGIN);
   };
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { fetchMeStatus } from "../api/users";
+import { ROUTES } from "../constants/routes";
 
 export default function ProfileGate() {
   const [loading, setLoading] = useState(true);
@@ -16,13 +17,10 @@ export default function ProfileGate() {
         if (!alive) return;
         if (data?.profile_complete) {
           setAllow(true);
+        } else if (loc.pathname !== ROUTES.COMPLETE_PROFILE) {
+          nav(ROUTES.COMPLETE_PROFILE, { replace: true });
         } else {
-          // The user has logged in -> can only stay in create-profile page
-          if (loc.pathname !== "/onboarding/create-profile") {
-            nav("/onboarding/create-profile", { replace: true });
-          } else {
-            setAllow(true);
-          }
+          setAllow(true);
         }
       } catch {
         // TODO: API

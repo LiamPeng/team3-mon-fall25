@@ -16,6 +16,7 @@ import {
   patchCompleteProfile,
   uploadAvatar,
 } from "../api/users";
+import { getLastAuthEmail, clearLastAuthEmail } from "../utils/authEmailStorage";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_.]+$/;
 const BIO_MAX = 500;
@@ -39,7 +40,7 @@ export default function CreateProfile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => getLastAuthEmail());
   const [avatarUrl, setAvatarUrl] = useState("");
   const [form, setForm] = useState({
     username: "",
@@ -65,7 +66,7 @@ export default function CreateProfile() {
       try {
         const { data } = await fetchCompleteProfile();
         if (!alive) return;
-        setEmail(data.email || "");
+        setEmail(data.email || getLastAuthEmail());
         setAvatarUrl(data.avatar_url || "");
         setForm({
           username: data.username || "",
@@ -125,6 +126,7 @@ export default function CreateProfile() {
       const payload = { ...form, avatar_url: avatarUrl || undefined };
       await patchCompleteProfile(payload);
       alert("Profile completed! Welcome to NYU Marketplace.");
+      clearLastAuthEmail();
       navigate("/", { replace: true });
     } catch (err) {
       const apiErr = err?.response?.data || {};
