@@ -42,7 +42,6 @@ const EditListing = () => {
         setLocation(data.dorm_location || data.location || "");
         setExistingImages(data.images || []);
         setOriginalListing(data);
-        // Set initial preview
         setPreviewListing(data);
       } catch (error) {
         console.error("Failed to fetch listing:", error);

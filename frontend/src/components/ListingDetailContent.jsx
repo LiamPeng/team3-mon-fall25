@@ -270,13 +270,11 @@ export default function ListingDetailContent({
         setCurrentImageIndex((prev) => (prev - 1 + imagesLength) % imagesLength);
     };
 
-    const priceDisplay =
-        typeof listing.price === "string"
-            ? listing.price
-            : parseFloat(listing.price).toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            });
+    // Format price with thousand separators (handles both string and number from API)
+    const priceDisplay = parseFloat(listing.price || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
     const statusClass = (listing.status || "").toLowerCase();
 
     const sellerData = {

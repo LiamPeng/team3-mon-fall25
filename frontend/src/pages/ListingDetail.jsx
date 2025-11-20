@@ -118,12 +118,10 @@ export default function ListingDetail() {
                     <div className="listing-detail-mobile-price">
                         <p className="listing-detail-mobile-price-label">Price</p>
                         <p className="listing-detail-mobile-price-value">
-                            ${typeof listing.price === "string"
-                                ? listing.price
-                                : parseFloat(listing.price).toLocaleString("en-US", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                })}
+                            ${parseFloat(listing.price || 0).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            })}
                         </p>
                     </div>
                     <button
