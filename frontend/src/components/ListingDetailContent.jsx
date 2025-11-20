@@ -288,8 +288,10 @@ export default function ListingDetailContent({
         avatarUrl: null,
     };
 
+    const rootClass = `listing-detail-content${isPreview ? " listing-detail-preview" : ""}`;
+
     return (
-        <>
+        <div className={rootClass}>
             {/* Main Content - Two Column Layout */}
             <div className="listing-detail-container listing-detail-main">
                 <div className="listing-detail-grid">
@@ -570,7 +572,7 @@ export default function ListingDetailContent({
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }
 

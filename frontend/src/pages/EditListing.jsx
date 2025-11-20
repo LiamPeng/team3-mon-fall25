@@ -674,11 +674,12 @@ const EditListing = () => {
             top: isMobile ? "auto" : 96,
             maxHeight: isMobile ? "none" : "calc(100vh - 120px)",
             overflowY: isMobile ? "visible" : "auto",
+            minWidth: 0,
           }}
         >
           <h2
             style={{
-              fontSize: 24,
+              fontSize: 32,
               fontWeight: 700,
               marginBottom: 24,
               color: "#111",
